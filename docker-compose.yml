@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   youtube-extractor:
-    build: .
+    image: ghcr.io/brianfromm/youtube-video-extractor:latest
     container_name: youtube-extractor
     ports:
       - "8080:8080"
@@ -12,7 +12,7 @@ services:
       - FLASK_ENV=production
     restart: unless-stopped
     labels:
-      - "com.centurylinklabs.watchtower.enable=false"
+      - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
