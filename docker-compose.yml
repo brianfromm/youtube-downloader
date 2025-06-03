@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  youtube-extractor:
+    build: .
+    container_name: youtube-extractor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /tmp:/tmp
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
