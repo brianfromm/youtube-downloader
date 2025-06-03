@@ -30,7 +30,6 @@ jobs:
         run: |
           npm install -g semantic-release@22
           npm install -g @semantic-release/changelog@6
-          npm install -g @semantic-release/git@10
           npm install -g @semantic-release/github@9
 
       - name: Release
