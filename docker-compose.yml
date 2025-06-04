@@ -1,6 +1,9 @@
 services:
   youtube-extractor:
-    image: ghcr.io/brianfromm/youtube-video-extractor:latest
+    image: ${COMPOSE_IMAGE:-ghcr.io/brianfromm/youtube-video-extractor:latest}
+    build:
+      context: .
+    platform: ${COMPOSE_PLATFORM:-linux/amd64}
     container_name: youtube-extractor
     ports:
       - "8080:8080"
@@ -8,6 +11,7 @@ services:
       - /tmp:/tmp
     environment:
       - FLASK_ENV=production
+      - USE_DEV_SERVER=${USE_DEV_SERVER:-false}
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

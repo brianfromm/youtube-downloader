@@ -25,5 +25,9 @@ RUN mkdir -p /tmp/ytextractor && chmod 777 /tmp/ytextractor
 # Expose port 8080
 EXPOSE 8080
 
-# Run the application
-CMD ["python", "server.py"]
+# Use environment variable to determine how to run
+CMD if [ "$USE_DEV_SERVER" = "true" ]; then \
+        python server.py; \
+    else \
+        gunicorn --bind 0.0.0.0:8080 --workers 4 --timeout 300 server:app; \
+    fi
