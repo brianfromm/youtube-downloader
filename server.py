@@ -65,6 +65,51 @@ def serve_html():
     except Exception as e:
         return f"Error serving HTML file: {str(e)}. Make sure 'youtube-extractor.html' is in the same directory as this server file."
 
+def clean_youtube_url(url):
+    """Clean YouTube URL by removing tracking parameters and normalizing format"""
+    import re
+    from urllib.parse import urlparse, parse_qs
+    
+    # Extract video ID from various YouTube URL formats
+    video_id_match = re.search(r'(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})', url)
+    
+    if not video_id_match:
+        return url  # Return original if we can't parse it
+    
+    video_id = video_id_match.group(1)
+    
+    # Extract timestamp if present (t= or start= parameter)
+    timestamp = None
+    try:
+        parsed = urlparse(url)
+        if parsed.query:
+            params = parse_qs(parsed.query)
+            # Check for t parameter (youtube.com) or start parameter
+            if 't' in params:
+                timestamp = params['t'][0]
+            elif 'start' in params:
+                timestamp = params['start'][0]
+        
+        # Also check for #t= in fragment (youtu.be format)
+        if parsed.fragment and parsed.fragment.startswith('t='):
+            timestamp = parsed.fragment[2:]
+            
+        # Handle &t= in youtu.be URLs
+        if '&t=' in url:
+            t_match = re.search(r'[&?]t=([^&]+)', url)
+            if t_match:
+                timestamp = t_match.group(1)
+                
+    except:
+        pass  # If URL parsing fails, continue without timestamp
+    
+    # Return clean youtube.com format
+    clean_url = f"https://www.youtube.com/watch?v={video_id}"
+    if timestamp:
+        clean_url += f"&t={timestamp}"
+    
+    return clean_url
+
 @app.route('/extract', methods=['POST'])
 def extract_video_info():
     try:
@@ -74,7 +119,11 @@ def extract_video_info():
         if not url:
             return jsonify({'error': 'No URL provided'}), 400
         
-        print(f"🎬 Extracting video info from: {url}", flush=True)
+        # Clean the URL to remove tracking parameters
+        clean_url = clean_youtube_url(url)
+        print(f"🎬 Extracting video info from: {clean_url}", flush=True)
+        if clean_url != url:
+            print(f"🧹 Cleaned URL from: {url}", flush=True)
         
         # Configure yt-dlp options
         ydl_opts = {
@@ -84,7 +133,7 @@ def extract_video_info():
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+            info = ydl.extract_info(clean_url, download=False)
             
             # Extract relevant information
             video_data = {
@@ -225,12 +274,16 @@ def combine_video_audio():
         video_format_id = str(video_format_id).split('-')[0]
         audio_format_id = str(audio_format_id).split('-')[0]
         
+        # Clean the URL to remove tracking parameters  
+        clean_url = clean_youtube_url(url)
         print(f"🔧 Starting combination: video format {video_format_id} + audio format {audio_format_id}", flush=True)
+        if clean_url != url:
+            print(f"🧹 Using cleaned URL for combination", flush=True)
         
         # Get video info for filename
         ydl_opts_info = {'quiet': True, 'no_warnings': True}
         with yt_dlp.YoutubeDL(ydl_opts_info) as ydl:
-            info = ydl.extract_info(url, download=False)
+            info = ydl.extract_info(clean_url, download=False)
             title = info.get('title', 'video')
         
         # Clean filename
@@ -240,7 +293,7 @@ def combine_video_audio():
         video_resolution = "Unknown"
         try:
             with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
-                formats_info = ydl.extract_info(url, download=False)
+                formats_info = ydl.extract_info(clean_url, download=False)
                 for fmt in formats_info.get('formats', []):
                     if fmt.get('format_id') == video_format_id:
                         if fmt.get('height'):
@@ -281,7 +334,7 @@ def combine_video_audio():
                 start_time = time.time()
                 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
+                    ydl.download([clean_url])
                 
                 processing_time = time.time() - start_time
                 print(f"⏱️ yt-dlp processing took {processing_time:.1f} seconds", flush=True)
@@ -291,7 +344,7 @@ def combine_video_audio():
                     print(f"❌ Expected output file not found at: {output_path}", flush=True)
                     print(f"📂 Files in temp dir: {os.listdir(temp_dir)}", flush=True)
                     print("🔄 yt-dlp method failed, trying manual FFmpeg combination...", flush=True)
-                    return manual_combine(url, video_format_id, audio_format_id, clean_title, video_resolution, temp_dir)
+                    return manual_combine(clean_url, video_format_id, audio_format_id, clean_title, video_resolution, temp_dir)
                 
                 print(f"✅ Output file created successfully: {os.path.basename(output_path)}", flush=True)
                 
@@ -317,7 +370,7 @@ def combine_video_audio():
                 processing_time = time.time() - start_time if 'start_time' in locals() else 0
                 print(f"⚠️ yt-dlp combination failed after {processing_time:.1f}s: {str(e)}", flush=True)
                 print("🔄 Trying manual method...", flush=True)
-                return manual_combine(url, video_format_id, audio_format_id, clean_title, video_resolution, temp_dir)
+                return manual_combine(clean_url, video_format_id, audio_format_id, clean_title, video_resolution, temp_dir)
             
     except Exception as e:
         print(f"❌ Combination error: {str(e)}", flush=True)
@@ -325,7 +378,7 @@ def combine_video_audio():
         traceback.print_exc()
         return jsonify({'error': f'Combine error: {str(e)}'}), 500
 
-def manual_combine(url, video_format_id, audio_format_id, clean_title, video_resolution, temp_dir):
+def manual_combine(clean_url, video_format_id, audio_format_id, clean_title, video_resolution, temp_dir):
     """Manually download video and audio, then combine with FFmpeg"""
     try:
         import subprocess
