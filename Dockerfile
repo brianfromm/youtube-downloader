@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY server.py .
 COPY youtube-extractor.html .
+COPY favicon.ico .
 
 # Create temp directory with proper permissions
 RUN mkdir -p /tmp/ytextractor && chmod 777 /tmp/ytextractor
