@@ -450,7 +450,7 @@
           button.disabled = true;
 
           // Request combination from server
-          const response = await fetch("https://yt.brianfromm.com/combine", {
+          const response = await fetch("/combine", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -574,7 +574,7 @@
           const currentUrl = urlInput.value.trim();
 
           // Use the new server-side download route
-          const downloadUrl = `https://yt.brianfromm.com/download/${formatId}?url=${encodeURIComponent(
+          const downloadUrl = `/download/${formatId}?url=${encodeURIComponent(
             currentUrl
           )}`;
 
@@ -611,7 +611,7 @@
         showLoading();
 
         try {
-          const response = await fetch("https://yt.brianfromm.com/extract", {
+          const response = await fetch("/extract", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
