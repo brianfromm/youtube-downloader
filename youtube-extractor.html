@@ -284,7 +284,11 @@
         extractBtn.textContent = "Extract Info";
       }
 
+      // Displays the results fetched from the server, including video info and format lists.
       function displayResults(data) {
+        // Store formats globally for easy access by playVideo and downloadVideo functions without re-fetching.
+        // This avoids passing around large data structures or querying the DOM repeatedly.
+        window.currentFormats = data.formats;
         // Store formats globally for download function
         window.currentFormats = data.formats;
 
@@ -344,14 +348,18 @@
         results.style.display = "block";
       }
 
+      // Adds a special section for 'High Quality Combined' downloads.
+      // This allows users to combine the best available audio with selected video-only streams.
       function addCombinedSection(videoFormats, audioFormats) {
         addSectionHeader("⚡ High Quality Combined (Best Choice)", "#8e44ad");
 
         // Get best audio format for combining
-        const bestAudio = audioFormats[0]; // Already sorted by quality
+        // Assumes audioFormats is already sorted by quality (best first) by the server.
+        const bestAudio = audioFormats[0];
 
         // Create combination options for top 3 video qualities
-        const topVideoFormats = videoFormats.slice(0, 3); // Top 3 video qualities
+        // Offer combination options for the top 3 available video-only formats.
+        const topVideoFormats = videoFormats.slice(0, 3);
 
         console.log(
           "Video formats for combining:",
@@ -393,10 +401,11 @@
       }
 
       async function combineVideoAudio(
-        videoFormatId,
-        audioFormatId,
-        buttonElement
+        videoFormatId, // ID of the video-only stream
+        audioFormatId, // ID of the audio-only stream
+        buttonElement  // The button that was clicked, to update its text/state
       ) {
+        // This function calls the server's /combine endpoint to get a merged video and audio file.
         try {
           const currentUrl = urlInput.value.trim();
 
@@ -415,6 +424,7 @@
           button.disabled = true;
 
           // Request combination from server
+          // Request the server to combine the specified video and audio formats.
           const response = await fetch("/combine", {
             method: "POST",
             headers: {
@@ -428,7 +438,8 @@
           });
 
           if (response.ok) {
-            // Get the filename from response headers with better error handling
+            // Attempt to parse the filename from the 'Content-Disposition' header.
+            // This header can have different formats, so we try to handle common ones.
             let filename = "combined_video.mp4";
 
             try {
@@ -462,13 +473,16 @@
             console.log("Final filename:", filename);
 
             // Download the combined file
+            // Convert the server's response (the video file) into a Blob.
             const blob = await response.blob();
+            // Create a temporary URL for the Blob to make it downloadable.
             const url = window.URL.createObjectURL(blob);
+            // Create a temporary anchor element to trigger the download.
             const link = document.createElement("a");
             link.href = url;
-            link.download = filename;
-            link.click();
-            window.URL.revokeObjectURL(url);
+            link.download = filename; // Set the desired filename for the download.
+            link.click(); // Programmatically click the link to start the download.
+            window.URL.revokeObjectURL(url); // Release the object URL to free up resources.
           } else {
             const error = await response.json();
             alert("Combination failed: " + (error.error || "Unknown error"));
@@ -553,6 +567,8 @@
         formatList.appendChild(formatItem);
       }
 
+      // Opens the direct URL of a video/audio stream in a new tab for playback.
+      // Relies on the browser's native ability to play the format.
       function playVideo(formatId, ext) {
         // Get the direct URL and open in new tab for playback
         const format = window.currentFormats?.find(
@@ -565,11 +581,14 @@
         }
       }
 
+      // Initiates a download for a pre-muxed or single stream using the server's /download endpoint.
       async function downloadVideo(formatId, ext) {
         try {
           const currentUrl = urlInput.value.trim();
 
           // Use the new server-side download route
+          // Construct the URL for the server's /download endpoint.
+          // The server will then fetch the stream and provide appropriate download headers.
           const downloadUrl = `/download/${formatId}?url=${encodeURIComponent(
             currentUrl
           )}`;
@@ -586,6 +605,7 @@
         }
       }
 
+      // Fetches video information and available formats from the server's /extract endpoint.
       async function extractVideoInfo() {
         const url = urlInput.value.trim();
 
