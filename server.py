@@ -427,7 +427,7 @@ def manual_combine(clean_url, video_format_id, audio_format_id, clean_title, vid
             '-i', video_path,
             '-i', audio_path, 
             '-c:v', 'copy',
-            '-c:a', 'aac',
+            '-c:a', 'aac',  # Re-encode audio to AAC for broad compatibility and to avoid issues with direct stream copy
             '-shortest',
             output_path
         ]
@@ -474,7 +474,7 @@ def download_file(format_id):
         # Get the URL from the query parameter
         video_url = request.args.get('url')
         if not video_url:
-            return "URL parameter required", 400
+            return jsonify({'error': 'URL parameter required'}), 400
         
         print(f"⬇️ Starting download for format {format_id}", flush=True)
         
@@ -497,7 +497,7 @@ def download_file(format_id):
             
             if not selected_format:
                 print(f"❌ Format {format_id} not found", flush=True)
-                return "Format not found", 404
+                return jsonify({'error': f'Format {format_id} not found'}), 404
             
             # Clean up the title for use as filename
             title = info.get('title', 'video')
@@ -537,7 +537,7 @@ def download_file(format_id):
             
     except Exception as e:
         print(f"❌ Download failed: {str(e)}", flush=True)
-        return f"Download error: {str(e)}", 500
+        return jsonify({'error': f'Download error: {str(e)}'}), 500
 
 @app.route('/favicon.ico')
 def favicon():
