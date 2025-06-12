@@ -1,0 +1,22 @@
+[tool.black]
+line-length = 120
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+extend-ignore = ["E203"]
+# Optional: include fixes for common plugins (many of which Ruff bundles)
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "RUF"   # Ruff-specific rules
+]

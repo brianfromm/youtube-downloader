@@ -1,0 +1,305 @@
+body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        background-color: white;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      h1 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-size: 2.2em;
+      }
+
+      .subtitle {
+        color: #7f8c8d;
+        font-size: 1.1em;
+        margin-bottom: 30px;
+      }
+
+      .input-section {
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .input-group {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 5px;
+      }
+
+      #urlInput {
+        flex: 1;
+        padding: 12px 16px;
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
+
+      #urlInput:focus {
+        outline: none;
+        border-color: #3498db;
+      }
+
+      .input-container {
+        position: relative;
+        display: flex; /* Aligns input and button if button were inside */
+        flex-grow: 1; /* Allows input container to take available space */
+      }
+
+      #urlInput {
+        padding-right: 30px; /* Space for the clear icon */
+        /* Ensure existing width/flex properties are maintained or adjusted */
+        width: 100%; /* Make sure input takes full width of its container */
+      }
+
+      .clear-input-icon {
+        position: absolute;
+        right: 15px; /* Increased for more space from edge */
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        font-size: 20px;
+        color: #aaa;
+        line-height: 1; /* Ensure consistent vertical alignment */
+        display: none; /* Initially hidden, JS controls visibility */
+      }
+
+      .clear-input-icon:hover {
+        color: #333;
+      }
+
+      /* General styles for buttons in the input section */
+      .input-section button {
+        padding: 12px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-left: 10px; /* Space between buttons */
+      }
+
+      .input-section button:first-of-type {
+        margin-left: 0; /* No left margin for the first button in the group */
+      }
+
+      #extractBtn {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      #extractBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+      }
+
+      #extractBtn:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #7f8c8d;
+        display: none;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      #videoThumbnail {
+        display: none; /* Initially hidden, JS will make it block */
+        max-width: 240px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .results {
+        display: none;
+      }
+
+      .video-info {
+        background: white;
+        border: 2px solid #e1e8ed;
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .video-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+
+      .video-meta {
+        color: #7f8c8d;
+        font-size: 0.9em;
+        margin-bottom: 0px;
+      }
+
+      .formats-section {
+        margin-top: 20px;
+      }
+
+
+      .format-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .format-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        transition: all 0.2s ease;
+      }
+
+      .format-item:hover {
+        background: #e9ecef;
+        transform: translateY(-1px);
+      }
+
+      .format-details {
+        flex: 1;
+      }
+
+      .format-type {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 4px;
+      }
+
+      .format-specs {
+        font-size: 0.85em;
+        color: #7f8c8d;
+      }
+
+      .download-btn {
+        /* background: linear-gradient(135deg, #2ecc71, #27ae60); */ /* Initial background now set by JS */
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .download-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(39, 174, 96, 0.3);
+      }
+
+      .note {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #856404;
+      }
+
+.section-header {
+  font-size: 1.2em;
+  font-weight: 700;
+  padding: 10px 15px;
+  margin: 25px 0 15px 0; 
+  border-radius: 6px;
+  color: #ffffff; /* Default white text, assuming dark backgrounds */
+  /* Default/Fallback background and border, if no data-section-type matches */
+  background-color: #7f8c8d; 
+  border-bottom: 2px solid #607070; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Subtle shadow for a bit of lift */
+}
+
+.section-header[data-section-type="high-quality"] {
+  background-color: #8e44ad; /* Purple */
+  border-bottom-color: #703080; /* Darker purple */
+}
+
+.section-header[data-section-type="video-audio"] {
+  background-color: #27ae60; /* Green */
+  border-bottom-color: #1f8b4c; /* Darker green */
+}
+
+.section-header[data-section-type="video-only"] {
+  background-color: #d35400; /* Darker Orange */
+  border-bottom-color: #a04000; /* Even darker orange */
+}
+
+.section-header[data-section-type="audio-only"] {
+  background-color: #2980b9; /* Blue */
+  border-bottom-color: #1f618d; /* Darker blue */
+}
+
+.section-header[data-section-type="other"] {
+  background-color: #7f8c8d; /* Slate/Grey (same as default) */
+  border-bottom-color: #607070; /* Darker Slate/Grey */
+}
+
+footer {
+  text-align: center;
+  padding: 15px 20px;
+  margin-top: 30px;
+  font-size: 0.8em;
+  color: #777;
+  border-top: 1px solid #eee;
+}
+
+footer p {
+  margin: 0;
+  line-height: 1.4;
+}

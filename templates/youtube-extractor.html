@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Video Extractor Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body>
+    <div class="header">
+      <h1>YouTube Video Extractor</h1>
+    </div>
+
+    <div class="input-section">
+      <div class="input-group">
+        <div class="input-container">
+          <input
+            type="text"
+            id="urlInput"
+            placeholder="Paste YouTube URL here..."
+          />
+          <span id="clearInputIcon" class="clear-input-icon" style="display: none;">&times;</span>
+        </div>
+        <button id="extractBtn">Extract Info</button>
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        Analyzing video formats...
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="video-info" id="videoInfo">
+        <img id="videoThumbnail" src="" alt="Video Thumbnail">
+        <!-- Other video info will be populated here by JS -->
+      </div>
+
+      <div class="formats-section">
+        <div class="format-list" id="formatList">
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+
+    <footer>
+      <p>
+        Disclaimer: This tool is for educational and personal use only. Users are solely responsible for ensuring that their use of this tool and any downloaded content complies with all applicable laws, including copyright, and the terms of service of the content provider. Please respect the rights of content creators.
+      </p>
+    </footer>
+  </body>
+</html>
