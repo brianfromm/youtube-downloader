@@ -1,22 +1,33 @@
 services:
   youtube-extractor:
-    image: ${COMPOSE_IMAGE:-ghcr.io/brianfromm/youtube-video-extractor:latest}
+    # Image configuration:
+    # - For local development: Set COMPOSE_IMAGE in '.env.local' (e.g., COMPOSE_IMAGE=youtube-extractor-local:latest).
+    #   This will build and use a local image with that tag.
+    # - For production (e.g., Synology NAS with Watchtower): Set COMPOSE_IMAGE in an '.env' file on the server
+    #   (or via Container Manager environment settings) to your production image (e.g., COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-video-extractor:latest).
+    # - If COMPOSE_IMAGE is not set in any .env file, it defaults to 'youtube-extractor-default:latest' for local builds.
+    image: ${COMPOSE_IMAGE:-youtube-extractor-default:latest}
     build:
       context: .
     platform: ${COMPOSE_PLATFORM:-linux/amd64}
     container_name: youtube-extractor
     ports:
-      - "8080:8080"
+      # HOST_PORT defaults to APP_PORT if not set in .env file
+      - "${HOST_PORT:-${APP_PORT:-8080}}:${APP_PORT:-8080}"
     volumes:
       - /tmp:/tmp
+      # Mount the directory for processed files to the host for easier access/debugging
+      # The server saves files to /app/processed_files inside the container.
+      - ./processed_videos_host:/app/processed_files
     environment:
       - FLASK_ENV=production
       - USE_DEV_SERVER=${USE_DEV_SERVER:-false}
+      - APP_PORT=${APP_PORT:-8080}
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT:-8080}/health"]
       interval: 30s
       timeout: 10s
       retries: 3

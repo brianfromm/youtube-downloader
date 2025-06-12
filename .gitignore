@@ -1,6 +1,8 @@
 # Local files
 .DS_Store
 .env.local
+settings.json
+/processed_videos_host/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
