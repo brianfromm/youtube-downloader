@@ -9,6 +9,7 @@ import time
 import traceback  # For detailed error logging
 import uuid
 from contextlib import suppress
+from threading import Timer
 from urllib.parse import quote
 
 import yt_dlp
@@ -82,6 +83,30 @@ def clean_filename_for_storage(filename):
     return filename
 
 
+def create_descriptive_filename(video_title, task_id, file_extension="mp4", quality_info=None):
+    """Create a descriptive filename for storage that includes title and ensures uniqueness"""
+    clean_title = clean_filename_for_storage(video_title)
+    
+    # Add quality info if provided
+    if quality_info:
+        clean_title += f" ({quality_info})"
+    
+    # Add first 8 characters of UUID for uniqueness while keeping readability
+    unique_suffix = task_id[:8]
+    
+    # Construct filename: "Title (quality) [uuid8].ext"
+    descriptive_filename = f"{clean_title} [{unique_suffix}].{file_extension}"
+    
+    # Final safety check on length (filesystem limits)
+    if len(descriptive_filename) > 200:
+        # Truncate title but keep the unique suffix and extension
+        max_title_length = 200 - len(f" [{unique_suffix}].{file_extension}")
+        clean_title = clean_title[:max_title_length].strip()
+        descriptive_filename = f"{clean_title} [{unique_suffix}].{file_extension}"
+    
+    return descriptive_filename
+
+
 def sanitize_for_http_header(filename):
     if not filename or filename is None:
         return "video"
@@ -91,6 +116,49 @@ def sanitize_for_http_header(filename):
     if not filename:
         return "video"
     return quote(filename.encode("utf-8"), safe=" -.()[]!&")
+
+
+def cleanup_old_files(max_age_hours=168):  # 7 days = 168 hours
+    """Remove processed files older than max_age_hours"""
+    if not os.path.exists(PROCESSED_FILES_DIR):
+        app.logger.debug("Processed files directory does not exist, skipping cleanup")
+        return
+    
+    cutoff_time = time.time() - (max_age_hours * 3600)
+    cleaned_count = 0
+    total_size_mb = 0
+    
+    try:
+        for filename in os.listdir(PROCESSED_FILES_DIR):
+            filepath = os.path.join(PROCESSED_FILES_DIR, filename)
+            try:
+                # Check file age (creation time)
+                if os.path.getctime(filepath) < cutoff_time:
+                    file_size = os.path.getsize(filepath) / (1024 * 1024)  # MB
+                    os.remove(filepath)
+                    app.logger.info(f"🗑️ Cleaned up old file: {filename} ({file_size:.1f} MB)")
+                    cleaned_count += 1
+                    total_size_mb += file_size
+            except Exception as e:
+                app.logger.error(f"Error cleaning file {filename}: {e}")
+        
+        if cleaned_count > 0:
+            app.logger.info(f"🧹 Cleanup complete: removed {cleaned_count} old files, freed {total_size_mb:.1f} MB")
+        else:
+            app.logger.debug("🧹 Cleanup complete: no old files to remove")
+            
+    except Exception as e:
+        app.logger.error(f"Error during cleanup process: {e}")
+
+
+def schedule_cleanup():
+    """Schedule periodic cleanup every 24 hours"""
+    app.logger.info("🧹 Starting scheduled cleanup of old processed files...")
+    cleanup_old_files(max_age_hours=168)  # Remove files older than 7 days
+    
+    # Schedule next cleanup in 24 hours
+    Timer(24 * 3600, schedule_cleanup).start()
+    app.logger.debug("🔄 Next cleanup scheduled in 24 hours")
 
 
 @app.route("/")
@@ -362,8 +430,10 @@ def _manual_combine_for_worker(
         audio_path = os.path.join(temp_dir_path, "audio.m4a")
 
         # Determine final output filename for processed files directory
-        # The actual filename on disk should be just the task_id.mp4 for uniqueness and simplicity.
-        final_disk_filename = f"{task_id}.mp4"
+        # Use descriptive filename with title and quality info
+        final_disk_filename = create_descriptive_filename(
+            clean_title, task_id, "mp4", video_resolution
+        )
         final_output_path_on_disk = os.path.join(
             PROCESSED_FILES_DIR, final_disk_filename
         )
@@ -449,13 +519,12 @@ def _manual_combine_for_worker(
 
         total_time = time.time() - start_time
         file_size_mb = os.path.getsize(final_output_path_on_disk) / (1024 * 1024)
-        # Return just the task_id (UUID), as the file is now task_id.mp4
         app.logger.info(
             f"Task {task_id}: ✅ Manual FFmpeg combination successful. "
             f"Output: {final_disk_filename}, Size: {file_size_mb:.1f} MB, "
             f"Time: {total_time:.1f}s"
         )
-        return task_id  # Return task_id (UUID) on success
+        return final_disk_filename  # Return the actual filename created
 
     except Exception as e:
         app.logger.error(f"❌ Task {task_id}: Manual FFmpeg combine failed: {e!s}")
@@ -502,11 +571,13 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
     task_statuses[task_id] = processing_status
     COMPLETED_TASKS[task_id] = processing_status
 
-    # --- Filename for disk storage (uses task_id for uniqueness) ---
-    # Ensures on-disk filename is just UUID.mp4
-    on_disk_filename_base = f"{task_id}"
+    # --- Filename for disk storage (descriptive with uniqueness) ---
+    # Create descriptive filename that includes title and quality info
+    on_disk_filename = create_descriptive_filename(
+        clean_title, task_id, "mp4", video_resolution_text
+    )
     final_output_path = os.path.join(
-        PROCESSED_FILES_DIR, f"{on_disk_filename_base}.mp4"
+        PROCESSED_FILES_DIR, on_disk_filename
     )
 
     # --- User-facing filename (descriptive) ---
@@ -601,16 +672,16 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
 
                 # Expected path after manual combine
                 actual_created_filepath = os.path.join(
-                    PROCESSED_FILES_DIR, f"{task_id}.mp4"
+                    PROCESSED_FILES_DIR, returned_base
                 )
 
-                if returned_base == task_id and os.path.exists(actual_created_filepath):
+                if returned_base == on_disk_filename and os.path.exists(actual_created_filepath):
                     app.logger.info(
                         f"✅ Manual combine task {task_id} success. File: {actual_created_filepath}"
                     )
                     success_status = {
                         "status": "completed",
-                        "on_disk_filename": os.path.basename(actual_created_filepath),
+                        "on_disk_filename": final_disk_filename,
                         "filename": user_facing_filename,
                         "message": "File ready for download (manual combine/transcode).",
                     }
@@ -658,7 +729,7 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
         else:
             success_status = {
                 "status": "completed",
-                "on_disk_filename": os.path.basename(final_output_path),
+                "on_disk_filename": on_disk_filename,
                 "filename": user_facing_filename,  # User-friendly name
                 "message": "File ready for download (direct merge).",
             }
@@ -731,8 +802,10 @@ def _perform_individual_download(task_details):
         )
         user_facing_filename = f"{user_facing_filename_base}.{final_file_ext}"
 
-        temp_file_uuid = str(uuid.uuid4())
-        on_disk_filename_final_target = f"{temp_file_uuid}.{final_file_ext}"
+        # Create descriptive filename for individual downloads
+        on_disk_filename_final_target = create_descriptive_filename(
+            clean_title_for_storage, task_id, final_file_ext, resolution_text.strip("()")
+        )
         on_disk_filepath_final_target = os.path.join(
             PROCESSED_FILES_DIR, on_disk_filename_final_target
         )
@@ -1281,6 +1354,11 @@ print("Initializing and starting background task worker...", flush=True)
 worker_thread = threading.Thread(target=combination_worker_loop, daemon=True)
 worker_thread.start()
 print("Background task worker started.", flush=True)
+
+# Start the cleanup scheduler
+print("Starting automatic file cleanup scheduler...", flush=True)
+schedule_cleanup()
+print("File cleanup scheduler started.", flush=True)
 
 if __name__ == "__main__":
     use_dev_server = os.environ.get("USE_DEV_SERVER", "true").lower() == "true"
