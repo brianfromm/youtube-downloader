@@ -12,7 +12,12 @@
           { "type": "style", "release": "patch" },
           { "type": "refactor", "release": "patch" },
           { "type": "test", "release": "patch" },
-          { "type": "chore", "release": "patch" }
+          { "type": "chore", "release": "patch" },
+          { "type": "optimize", "release": "minor" },
+          { "type": "perf", "release": "minor" },
+          { "type": "security", "release": "patch" },
+          { "type": "build", "release": "patch" },
+          { "type": "ci", "release": "patch" }
         ]
       }
     ],
