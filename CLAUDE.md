@@ -61,3 +61,28 @@ GUNICORN_WORKERS=1  # MUST be 1 due to in-memory queue
 - Background worker thread for processing
 - Dual codec support (direct merge + FFmpeg transcode)
 - Mobile-responsive UI (work in progress)
+
+## Commit Patterns (Semantic Release)
+Use these commit prefixes for automatic versioning:
+
+### Minor Version Bumps (1.7.x → 1.8.0):
+- `feat:` - New features
+- `optimize:` - Performance optimizations
+- `perf:` - Performance improvements
+
+### Patch Version Bumps (1.7.1 → 1.7.2):
+- `fix:` - Bug fixes
+- `docs:` - Documentation updates
+- `chore:` - Maintenance tasks
+- `refactor:` - Code improvements
+- `style:` - Code formatting
+- `test:` - Test updates
+- `security:` - Security patches
+- `build:` - Build system changes
+- `ci:` - CI/CD changes
+
+### Major Version Bumps (1.x.x → 2.0.0):
+- `feat!:` - Breaking changes
+- Any type with `BREAKING CHANGE:` in commit body
+
+**Example**: `optimize: streamline Docker build workflow for 13x faster builds`
