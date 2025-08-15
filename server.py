@@ -20,7 +20,7 @@ app = Flask(__name__)
 CORS(app)
 app.logger.propagate = False  # Prevent duplicate logs when using Gunicorn
 
-# Configure logger for direct execution (e.g., `python server.py`)
+# Configure logger for direct execution (e.g., `python3 server.py`)
 if __name__ == "__main__" and not app.debug:
     # If running directly and not in debug mode, set up a custom stream handler.
     # Flask's default debug logger is used if app.debug is True.

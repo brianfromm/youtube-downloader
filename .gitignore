@@ -3,6 +3,7 @@
 .env.local
 settings.json
 /processed_videos_host/
+/processed_files/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

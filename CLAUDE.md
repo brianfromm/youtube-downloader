@@ -13,7 +13,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Run locally
-python server.py
+python3 server.py
 # Access: http://localhost:8080
 ```
 

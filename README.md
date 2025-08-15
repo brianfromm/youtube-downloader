@@ -172,7 +172,7 @@ HOST_PORT=8080 # Standard host mapping for this service
 
 5.  **Run the Flask server:**
     ```bash
-    python server.py
+    python3 server.py
     ```
 
 6.  Open your web browser and navigate to `http://localhost:8080` or `http://0.0.0.0:8080`.
