@@ -45,12 +45,12 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Upgrade pip to latest version first
-RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir --upgrade --root-user-action=ignore pip
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
 # Ensure yt-dlp is the absolute latest version
-RUN pip install --no-cache-dir --upgrade yt-dlp[default]
+RUN pip install --no-cache-dir --upgrade --root-user-action=ignore yt-dlp[default]
 
 # Copy application files
 COPY server.py .
