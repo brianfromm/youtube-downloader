@@ -1,10 +1,10 @@
-# YouTube Video Extractor
+# YouTube Downloader
 
-A web-based tool to extract information and download various formats of YouTube videos, including the ability to manually combine separate high-quality video and audio streams into a single MP4 file. This project was created to practice AI-assisted coding.
+A web-based tool to analyze and download various formats of YouTube videos, including the ability to combine separate high-quality video and audio streams into a single MP4 file. This project was created to practice AI-assisted coding.
 
 ## Features
 
--   **Extract Video Information:** View video title, duration, uploader, view count, and upload date.
+-   **Video Analysis:** View video title, duration, uploader, view count, and upload date.
 -   **List Available Formats:** Displays all available video and audio streams, categorized by type (Video+Audio, Video-Only, Audio-Only).
 -   **Queued Downloads:** Initiate downloads for pre-muxed video/audio, video-only, or audio-only streams. Processing occurs in the background, and the download starts automatically when ready.
 -   **High-Quality Combined Downloads:** Select a video-only stream and the best audio to be combined into a high-quality MP4. This task is processed in the background, and the download starts automatically upon completion.
@@ -12,6 +12,9 @@ A web-based tool to extract information and download various formats of YouTube 
 -   **User-Friendly Web Interface:** Simple and intuitive interface to paste a URL and access download options.
 -   **Video Thumbnail Preview:** Displays a thumbnail of the YouTube video.
 -   **Asynchronous Task Processing:** Downloads and combinations are handled by a background task queue, allowing for a non-blocking user experience.
+-   **Automatic File Cleanup:** Automatically removes processed files older than 7 days to manage disk space.
+-   **Descriptive File Storage:** Processed files are stored with readable names including video title and quality information.
+-   **Automated Dependency Updates:** GitHub Actions workflow automatically rebuilds with latest yt-dlp and FFmpeg weekly.
 -   **Docker Support:** Includes `Dockerfile` and `docker-compose.yml` for easy setup and deployment in a containerized environment.
 
 ## Tech Stack
@@ -28,6 +31,8 @@ A brief overview of the key files and directories:
 - `server.py`: The main Flask application.
 - `templates/`: Contains HTML templates.
   - `youtube-extractor.html`: The main HTML file for the web interface.
+- `.github/workflows/`: GitHub Actions automation.
+  - `rebuild-dependencies.yml`: Weekly dependency update workflow.
 - `static/`: Contains static assets.
   - `css/styles.css`: CSS stylesheets.
   - `js/script.js`: JavaScript code.
@@ -35,7 +40,7 @@ A brief overview of the key files and directories:
 - `docker-compose.yml`: For Docker Compose setup.
 - `requirements.txt`: Python dependencies.
 - `start.sh`: Script to start the application (dev or prod server) inside Docker.
-- `processed_files/`: Directory where combined video/audio files are temporarily stored (created automatically).
+- `processed_files/`: Directory where processed video/audio files are stored with descriptive names (auto-cleaned after 7 days).
 
 ## Prerequisites
 
@@ -207,16 +212,30 @@ HOST_PORT=8080 # Standard host mapping for this service
 
 1.  Open the web application in your browser.
 2.  Paste a YouTube video URL (e.g., `https://www.youtube.com/watch?v=dQw4w9WgXcQ` or `https://youtu.be/dQw4w9WgXcQ`) into the input field.
-3.  Click "Extract Info".
+3.  Click "Analyze Video".
 4.  The application will display video details and a list of available download formats.
     -   **High Quality Combined:** Choose a video resolution to combine with the best audio. The button will show processing status, and the download will start automatically once the file is ready.
     -   **Video + Audio (Ready to Use):** Direct download for formats that already include audio.
     -   **Video Only / Audio Only:** Direct download for specific video or audio streams.
 5.  Click the "Download" or "Combine & Download" button for your desired format. The button will update to show the task status (e.g., "Queued...", "Processing..."). Once server-side processing is complete, the file download will begin automatically in your browser.
 
+## Automated Maintenance
+
+The application includes several automated features for minimal-maintenance operation:
+
+### **Dependency Updates**
+- **Weekly rebuilds**: GitHub Actions automatically rebuilds the Docker image every Sunday at 3am Mountain Time with the latest yt-dlp and FFmpeg versions
+- **Manual triggers**: Updates can be triggered manually via GitHub Actions when YouTube makes breaking changes
+- **Watchtower integration**: If using Watchtower, your containers will automatically update when new images are available
+
+### **File Management**
+- **Automatic cleanup**: Processed files are automatically removed after 7 days to prevent disk space issues
+- **Descriptive naming**: Files are stored with readable names like `"Video Title (1080p) [uuid8].mp4"` for easy identification
+- **Background processing**: All cleanup happens automatically without interrupting downloads
+
 ## Disclaimer
 
-This YouTube Video Extractor is provided for educational, personal, and demonstration purposes only. By using this tool, you agree that you are solely responsible for:
+This YouTube Downloader is provided for educational, personal, and demonstration purposes only. By using this tool, you agree that you are solely responsible for:
 
 -   Ensuring your use of this tool and any content downloaded complies with all applicable local, state, national, and international laws, including but not limited to copyright laws.
 -   Adhering to the terms of service of YouTube (or any other content provider).

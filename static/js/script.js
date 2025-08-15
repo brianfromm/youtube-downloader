@@ -29,7 +29,7 @@ function showLoading() {
 function hideLoading() {
   loading.style.display = "none";
   extractBtn.disabled = false;
-  extractBtn.textContent = "Extract Info";
+  extractBtn.textContent = "Analyze Video";
 }
 
 // Displays the results fetched from the server, including video info and format lists.
