@@ -31,13 +31,14 @@ docker-compose logs -f
 ```
 
 ### GitHub Actions
-- **Weekly rebuilds**: Every Sunday 3am MT
-- **Manual trigger**: Actions → "Rebuild with Latest Dependencies"
+- **Weekly rebuilds**: Every Sunday 3am MT (fast 60s builds)
+- **Manual trigger**: Actions → "Build and Push Docker Image"
+- **Auto-build**: On every push to main
 - **Image location**: `ghcr.io/brianfromm/youtube-downloader:latest`
 
 ## Important Files
 - `server.py` - Main Flask application with task queue
-- `.github/workflows/rebuild-dependencies.yml` - Automated dependency updates
+- `.github/workflows/docker-build.yml` - Automated builds and dependency updates
 - `processed_files/` - Auto-cleaned after 7 days, descriptive filenames
 - `PROCESSED_FILES_DIR` - Uses descriptive names like "Title (1080p) [uuid8].mp4"
 

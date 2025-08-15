@@ -6,6 +6,14 @@ on:
     tags: ["v*"]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 10 * * 0'  # Weekly on Sunday at 3am Mountain Time (10am UTC)
+  workflow_dispatch:  # Manual trigger
+    inputs:
+      reason:
+        description: 'Reason for manual build'
+        required: false
+        default: 'Manual dependency update'
 
 env:
   REGISTRY: ghcr.io
@@ -52,3 +60,4 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          pull: true  # Always pull latest base images for security updates
