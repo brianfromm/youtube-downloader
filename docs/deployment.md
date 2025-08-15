@@ -27,7 +27,7 @@ This is the recommended method for deploying on a server like a Synology NAS.
 
     services:
       youtube-extractor:
-        image: ${COMPOSE_IMAGE:-ghcr.io/brianfromm/youtube-video-extractor:latest} # Or your specific production image
+        image: ${COMPOSE_IMAGE:-ghcr.io/brianfromm/youtube-downloader:latest} # Or your specific production image
         container_name: youtube-extractor
         restart: unless-stopped
         ports:
@@ -58,7 +58,7 @@ This is the recommended method for deploying on a server like a Synology NAS.
     # --- Production .env for YouTube Video Extractor ---
 
     # Docker Image Configuration
-    COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-video-extractor:latest # Replace with your actual production image and tag
+    COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest # Replace with your actual production image and tag
 
     # Docker Build Configuration (primarily for local builds or if building on the server and need to specify target)
     # COMPOSE_PLATFORM=linux/amd64  # Example: For Synology NAS (amd64), often not needed if image is already amd64.
@@ -89,7 +89,7 @@ This is the recommended method for deploying on a server like a Synology NAS.
     ```
     Or, more explicitly:
     ```bash
-    docker pull ghcr.io/brianfromm/youtube-video-extractor:latest # Or your image
+    docker pull ghcr.io/brianfromm/youtube-downloader:latest # Or your image
     ```
 
 5.  **Start the Application:**

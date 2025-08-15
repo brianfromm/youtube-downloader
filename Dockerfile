@@ -44,6 +44,9 @@ WORKDIR /app
 # Copy requirements first for better caching
 COPY requirements.txt .
 
+# Upgrade pip to latest version first
+RUN pip install --no-cache-dir --upgrade pip
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 # Ensure yt-dlp is the absolute latest version

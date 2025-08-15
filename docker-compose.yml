@@ -4,7 +4,7 @@ services:
     # - For local development: Set COMPOSE_IMAGE in '.env.local' (e.g., COMPOSE_IMAGE=youtube-extractor-local:latest).
     #   This will build and use a local image with that tag.
     # - For production (e.g., Synology NAS with Watchtower): Set COMPOSE_IMAGE in an '.env' file on the server
-    #   (or via Container Manager environment settings) to your production image (e.g., COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-video-extractor:latest).
+    #   (or via Container Manager environment settings) to your production image (e.g., COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest).
     # - If COMPOSE_IMAGE is not set in any .env file, it defaults to 'youtube-extractor-default:latest' for local builds.
     image: ${COMPOSE_IMAGE:-youtube-extractor-default:latest}
     build:

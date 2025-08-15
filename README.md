@@ -70,7 +70,7 @@ Available environment variables:
 - **`COMPOSE_IMAGE`**:
   - **Purpose:** Specifies the Docker image name and tag to use.
   - **Local Development (in `.env.local`):** Set to a local-specific tag, e.g., `COMPOSE_IMAGE=youtube-extractor-local:latest`. When you run `docker-compose build`, the locally built image will be tagged with this name.
-  - **Production (in `.env` on server):** Set to your pre-built production image URL, e.g., `COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-video-extractor:latest`. This allows Watchtower (or manual pulls) to use the correct production image.
+  - **Production (in `.env` on server):** Set to your pre-built production image URL, e.g., `COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest`. This allows Watchtower (or manual pulls) to use the correct production image.
   - **Default (if not set):** Defaults to `youtube-extractor-default:latest` in `docker-compose.yml`, intended for local builds if no specific `COMPOSE_IMAGE` is provided.
 
 - **`COMPOSE_PLATFORM`**:
@@ -135,7 +135,7 @@ USE_DEV_SERVER=true
 
 **Example `.env` for a production Synology NAS (amd64):**
 ```
-COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-video-extractor:latest
+COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest
 USE_DEV_SERVER=false
 GUNICORN_WORKERS=1 # IMPORTANT: Must be 1 due to in-memory task queue
 GUNICORN_THREADS=4 # Default, can be adjusted based on NAS performance
@@ -152,8 +152,8 @@ HOST_PORT=8080 # Standard host mapping for this service
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/brianfromm/youtube-video-extractor.git
-    cd youtube-video-extractor
+    git clone https://github.com/brianfromm/youtube-downloader.git
+    cd youtube-downloader
     ```
 
 2.  **Create and activate a virtual environment (recommended):**
@@ -181,8 +181,8 @@ HOST_PORT=8080 # Standard host mapping for this service
 
 1.  **Clone the repository (if not already done):**
     ```bash
-    git clone https://github.com/brianfromm/youtube-video-extractor.git
-    cd youtube-video-extractor
+    git clone https://github.com/brianfromm/youtube-downloader.git
+    cd youtube-downloader
     ```
 
 2.  **Using `docker-compose` (recommended for Docker):**

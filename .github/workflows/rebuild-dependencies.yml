@@ -40,9 +40,9 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/brianfromm/youtube-video-extractor:latest
-            ghcr.io/brianfromm/youtube-video-extractor:${{ steps.date.outputs.date }}
-            ghcr.io/brianfromm/youtube-video-extractor:build-${{ github.run_number }}
+            ghcr.io/brianfromm/youtube-downloader:latest
+            ghcr.io/brianfromm/youtube-downloader:${{ steps.date.outputs.date }}
+            ghcr.io/brianfromm/youtube-downloader:build-${{ github.run_number }}
           pull: true  # Pull latest base images
           no-cache: true  # Force fresh dependency downloads
           platforms: linux/amd64,linux/arm64
@@ -55,9 +55,9 @@ jobs:
           echo "**Reason**: ${{ github.event.inputs.reason || 'Scheduled dependency update' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### 📦 Images Published:" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/brianfromm/youtube-video-extractor:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/brianfromm/youtube-video-extractor:${{ steps.date.outputs.date }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/brianfromm/youtube-video-extractor:build-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/brianfromm/youtube-downloader:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/brianfromm/youtube-downloader:${{ steps.date.outputs.date }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/brianfromm/youtube-downloader:build-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Platforms**: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
