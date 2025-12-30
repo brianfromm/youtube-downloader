@@ -191,6 +191,11 @@ def schedule_cleanup() -> None:
 def _update_progress(task_id: str, progress_data: dict[str, any], phase: str = "downloading") -> None:
     """Update task progress from yt-dlp progress hooks"""
     try:
+        # Check if task has been cancelled - abort download immediately
+        if task_id in cancelled_tasks:
+            app.logger.info(f"🚫 Task {task_id} cancelled during {phase}, aborting yt-dlp download")
+            raise Exception(f"Task {task_id} cancelled by user")
+
         status = progress_data.get("status")
 
         if status == "downloading":
@@ -267,6 +272,11 @@ def _postprocessor_hook(task_id: str, d: dict[str, any]) -> None:
 def _parse_ffmpeg_progress(task_id: str, stderr_line: str, total_duration: float) -> None:
     """Parse FFmpeg stderr output and update task progress"""
     try:
+        # Check if task has been cancelled - signal to abort FFmpeg
+        if task_id in cancelled_tasks:
+            app.logger.info(f"🚫 Task {task_id} cancelled during FFmpeg combine, signaling abort")
+            raise Exception(f"Task {task_id} cancelled by user")
+
         # FFmpeg outputs progress in format: "time=HH:MM:SS.ms ..."
         # Example: "frame=  123 fps= 45 q=28.0 size=    1024kB time=00:00:05.12 bitrate=1638.4kbits/s speed=1.2x"
         if "time=" in stderr_line:
@@ -655,14 +665,26 @@ def _manual_combine_for_worker(
 
         # Read stderr line by line for progress updates
         stderr_output = []
-        for line in process.stderr:
-            stderr_output.append(line)
-            # Parse progress if we have duration
-            if video_duration > 0:
-                _parse_ffmpeg_progress(task_id, line, video_duration)
+        try:
+            for line in process.stderr:
+                stderr_output.append(line)
+                # Parse progress if we have duration (will raise exception if cancelled)
+                if video_duration > 0:
+                    _parse_ffmpeg_progress(task_id, line, video_duration)
 
-        # Wait for process to complete
-        process.wait()
+            # Wait for process to complete
+            process.wait()
+        except Exception:
+            # Task was cancelled - kill FFmpeg process immediately
+            if task_id in cancelled_tasks:
+                app.logger.info(f"🚫 Task {task_id}: Killing FFmpeg process due to cancellation")
+                process.kill()
+                process.wait()  # Wait for process to actually terminate
+                cancelled_tasks.discard(task_id)  # Remove from cancelled set
+                raise  # Re-raise to propagate cancellation
+            else:
+                # Some other error during progress parsing
+                raise
 
         if process.returncode != 0:
             stderr_text = "".join(stderr_output)
@@ -805,7 +827,13 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
 
         # If download completes without error, this path is taken by 'else' block.
 
-    except Exception as e_yt_dlp_combine:  # yt-dlp direct merge failed
+    except Exception as e_yt_dlp_combine:  # yt-dlp direct merge failed or cancelled
+        # Check if task was cancelled
+        if "cancelled by user" in str(e_yt_dlp_combine):
+            app.logger.info(f"🚫 Task {task_id}: yt-dlp download cancelled, stopping processing")
+            cancelled_tasks.discard(task_id)  # Clean up cancelled set
+            return  # Exit early, status already set to "cancelled"
+
         app.logger.warning(f"⚠️ yt-dlp merge failed for task {task_id}: {e_yt_dlp_combine!s}. Falling back to manual.")
 
         # Attempt 2: Manual download and ffmpeg combination (with transcoding)
@@ -847,7 +875,13 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
                     )
                     raise Exception("Manual combine error: Output file not found or worker return mismatch.")
 
-        except Exception as e_manual_combine:  # Manual ffmpeg combination also failed
+        except Exception as e_manual_combine:  # Manual ffmpeg combination also failed or cancelled
+            # Check if task was cancelled
+            if "cancelled by user" in str(e_manual_combine):
+                app.logger.info(f"🚫 Task {task_id}: Manual combine cancelled, stopping processing")
+                cancelled_tasks.discard(task_id)  # Clean up cancelled set
+                return  # Exit early, status already set to "cancelled"
+
             app.logger.error(f"❌ Manual combine task {task_id} also failed: {e_manual_combine!s}")
             traceback.print_exc()
 
@@ -1048,6 +1082,12 @@ def _perform_individual_download(task_details):
         COMPLETED_TASKS[task_id] = current_task_status  # Assign the same fully updated dict
 
     except Exception as e:
+        # Check if task was cancelled
+        if "cancelled by user" in str(e):
+            app.logger.info(f"🚫 Task {task_id}: Individual download cancelled, stopping processing")
+            cancelled_tasks.discard(task_id)  # Clean up cancelled set
+            return  # Exit early, status already set to "cancelled"
+
         app.logger.error(f"❌ Task {task_id}: Error in _perform_individual_download: {e!s}")
         if app.debug:  # Print full traceback if in debug mode
             traceback.print_exc()
