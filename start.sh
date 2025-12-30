@@ -14,6 +14,6 @@ else
     --threads ${GUNICORN_THREADS:-4} \
     --bind 0.0.0.0:${APP_PORT:-8080} \
     --log-level ${GUNICORN_LOGLEVEL:-info} \
-    --timeout ${GUNICORN_TIMEOUT:-300} \
+    --timeout ${GUNICORN_TIMEOUT:-0} \
     server:app
 fi
