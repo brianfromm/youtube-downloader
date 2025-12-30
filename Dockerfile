@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Install system dependencies (curl for downloading, ca-certificates for HTTPS, tar and xz-utils for extraction)
 # ffmpeg will be installed manually from yt-dlp/FFmpeg-Builds
