@@ -1,13 +1,15 @@
 [tool.black]
 line-length = 120
-target-version = ["py39"]
+target-version = ["py312"]
 
 [tool.isort]
 profile = "black"
 
 [tool.ruff]
 line-length = 120
-target-version = "py39"
+target-version = "py312"
+
+[tool.ruff.lint]
 extend-ignore = ["E203"]
 # Optional: include fixes for common plugins (many of which Ruff bundles)
 select = [
@@ -19,4 +21,21 @@ select = [
     "SIM",  # flake8-simplify
     "C4",   # flake8-comprehensions
     "RUF"   # Ruff-specific rules
+]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.messages_control]
+disable = [
+    "logging-fstring-interpolation",  # Modern Python is fine with f-strings in logging
+    "too-many-locals",                 # Video processing requires many variables
+    "too-many-branches",               # Complexity unavoidable for video processing logic
+    "too-many-statements",             # Large functions justified for processing workflows
+    "too-many-arguments",              # Some functions need many parameters
+    "too-many-positional-arguments",   # Same as above
+    "too-many-return-statements",      # Multiple exit points are clear for error handling
+    "too-many-lines",                  # Single module is clearer than splitting
+    "broad-exception-caught",          # Resilient error handling needed for downloads
+    "broad-exception-raised",          # Generic exceptions appropriate for workflow errors
 ]

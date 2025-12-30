@@ -1,0 +1,17 @@
+# Development dependencies for linting and code quality
+# Install with: pip install -r requirements-dev.txt
+
+# Modern fast linter (replaces flake8, isort, and more)
+ruff>=0.8.4
+
+# Code formatter
+black>=24.10.0
+
+# Import sorting (works with black)
+isort>=5.13.2
+
+# Traditional comprehensive linter (optional, for detailed analysis)
+pylint>=3.3.2
+
+# Type checking (optional)
+mypy>=1.13.0
