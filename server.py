@@ -191,6 +191,11 @@ def schedule_cleanup() -> None:
 def _update_progress(task_id: str, progress_data: dict[str, any], phase: str = "downloading") -> None:
     """Update task progress from yt-dlp progress hooks"""
     try:
+        # Check if task has been cancelled - abort download immediately
+        if task_id in cancelled_tasks:
+            app.logger.info(f"🚫 Task {task_id} cancelled during {phase}, aborting yt-dlp download")
+            raise Exception(f"Task {task_id} cancelled by user")
+
         status = progress_data.get("status")
 
         if status == "downloading":
@@ -264,9 +269,52 @@ def _postprocessor_hook(task_id: str, d: dict[str, any]) -> None:
         app.logger.error(f"Error in postprocessor hook for task {task_id}: {e}")
 
 
+def _mp3_postprocessor_hook(task_id: str, d: dict[str, any]) -> None:
+    """Update task status during MP3 conversion for UI feedback"""
+    try:
+        status = d.get("status")
+        postprocessor = d.get("postprocessor", "")
+
+        if status == "started" and postprocessor == "ExtractAudio":
+            current_status = task_statuses.get(task_id, {})
+            current_status.update(
+                {
+                    "status": "processing",
+                    "phase": "converting_mp3",
+                    "progress_percent": 100,  # Download complete, conversion starting
+                    "message": "Converting to MP3...",
+                }
+            )
+            task_statuses[task_id] = current_status
+            COMPLETED_TASKS[task_id] = current_status
+            app.logger.info(f"🎵 Task {task_id}: MP3 conversion started")
+
+        elif status == "finished":
+            current_status = task_statuses.get(task_id, {})
+            current_status.update(
+                {
+                    "status": "processing",
+                    "phase": "converting_mp3_complete",
+                    "progress_percent": 95,
+                    "message": "MP3 conversion complete",
+                }
+            )
+            task_statuses[task_id] = current_status
+            COMPLETED_TASKS[task_id] = current_status
+            app.logger.info(f"🎵 Task {task_id}: MP3 conversion finished")
+
+    except Exception as e:
+        app.logger.error(f"Error in MP3 postprocessor hook for task {task_id}: {e}")
+
+
 def _parse_ffmpeg_progress(task_id: str, stderr_line: str, total_duration: float) -> None:
     """Parse FFmpeg stderr output and update task progress"""
     try:
+        # Check if task has been cancelled - signal to abort FFmpeg
+        if task_id in cancelled_tasks:
+            app.logger.info(f"🚫 Task {task_id} cancelled during FFmpeg combine, signaling abort")
+            raise Exception(f"Task {task_id} cancelled by user")
+
         # FFmpeg outputs progress in format: "time=HH:MM:SS.ms ..."
         # Example: "frame=  123 fps= 45 q=28.0 size=    1024kB time=00:00:05.12 bitrate=1638.4kbits/s speed=1.2x"
         if "time=" in stderr_line:
@@ -525,6 +573,31 @@ def extract_video_info():
             video_only_formats = sort_by_quality(video_only_formats)
             audio_only_formats = sort_by_quality(audio_only_formats, is_audio=True)
 
+            # Add MP3 conversion options if audio formats exist
+            if audio_only_formats:
+                best_audio = audio_only_formats[0]  # Highest quality audio
+                duration_secs = video_data.get("duration_seconds", 0)
+
+                # Add MP3 options at different bitrates
+                for mp3_bitrate_kbps in [192, 128]:
+                    if duration_secs:
+                        estimated_mp3_size_mb = (duration_secs * mp3_bitrate_kbps) / 8 / 1000
+                        estimated_size_str = f"{estimated_mp3_size_mb:.1f} MB"
+                    else:
+                        estimated_size_str = "N/A"
+                    mp3_option = {
+                        "format_id": f"bestaudio_mp3_{mp3_bitrate_kbps}",  # e.g., bestaudio_mp3_192
+                        "ext": "mp3",
+                        "type": "audio-only",
+                        "quality": f"{mp3_bitrate_kbps}kbps",  # Match format: ###kbps
+                        "acodec": "mp3",
+                        "abr": mp3_bitrate_kbps,  # For sorting and bitrate detection
+                        "protocol": "conversion",
+                        "filesize": estimated_size_str,
+                        "source_format_id": best_audio.get("format_id"),  # Track source for logging
+                    }
+                    audio_only_formats.append(mp3_option)
+
             unique_resolutions = {}
             for fmt in video_only_formats:
                 height = fmt.get("height")
@@ -587,6 +660,7 @@ def _manual_combine_for_worker(
             "quiet": True,
             "no_warnings": True,
             "verbose": False,
+            "noplaylist": True,
             "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading_video")],
         }
         with yt_dlp.YoutubeDL(ydl_video_opts) as ydl:
@@ -603,6 +677,7 @@ def _manual_combine_for_worker(
             "quiet": True,
             "no_warnings": True,
             "verbose": False,
+            "noplaylist": True,
             "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading_audio")],
         }
         with yt_dlp.YoutubeDL(ydl_audio_opts) as ydl:
@@ -655,14 +730,26 @@ def _manual_combine_for_worker(
 
         # Read stderr line by line for progress updates
         stderr_output = []
-        for line in process.stderr:
-            stderr_output.append(line)
-            # Parse progress if we have duration
-            if video_duration > 0:
-                _parse_ffmpeg_progress(task_id, line, video_duration)
+        try:
+            for line in process.stderr:
+                stderr_output.append(line)
+                # Parse progress if we have duration (will raise exception if cancelled)
+                if video_duration > 0:
+                    _parse_ffmpeg_progress(task_id, line, video_duration)
 
-        # Wait for process to complete
-        process.wait()
+            # Wait for process to complete
+            process.wait()
+        except Exception:
+            # Task was cancelled - kill FFmpeg process immediately
+            if task_id in cancelled_tasks:
+                app.logger.info(f"🚫 Task {task_id}: Killing FFmpeg process due to cancellation")
+                process.kill()
+                process.wait()  # Wait for process to actually terminate
+                cancelled_tasks.discard(task_id)  # Remove from cancelled set
+                raise  # Re-raise to propagate cancellation
+            else:
+                # Some other error during progress parsing
+                raise
 
         if process.returncode != 0:
             stderr_text = "".join(stderr_output)
@@ -779,6 +866,7 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
                 "verbose": False,
                 "quiet": True,
                 "noprogress": True,
+                "noplaylist": True,
                 "ignoreerrors": False,  # Let it fail to trigger manual fallback if direct merge fails
                 "socket_timeout": 300,
                 "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading_combined")],
@@ -792,6 +880,7 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
                 "verbose": False,
                 "quiet": True,
                 "noprogress": True,
+                "noplaylist": True,
                 "postprocessor_args": ["-vcodec", "libx264", "-acodec", "aac"],
                 "ignoreerrors": False,  # Let it fail to trigger manual fallback
                 "socket_timeout": 300,
@@ -805,7 +894,13 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
 
         # If download completes without error, this path is taken by 'else' block.
 
-    except Exception as e_yt_dlp_combine:  # yt-dlp direct merge failed
+    except Exception as e_yt_dlp_combine:  # yt-dlp direct merge failed or cancelled
+        # Check if task was cancelled
+        if "cancelled by user" in str(e_yt_dlp_combine):
+            app.logger.info(f"🚫 Task {task_id}: yt-dlp download cancelled, stopping processing")
+            cancelled_tasks.discard(task_id)  # Clean up cancelled set
+            return  # Exit early, status already set to "cancelled"
+
         app.logger.warning(f"⚠️ yt-dlp merge failed for task {task_id}: {e_yt_dlp_combine!s}. Falling back to manual.")
 
         # Attempt 2: Manual download and ffmpeg combination (with transcoding)
@@ -847,7 +942,13 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
                     )
                     raise Exception("Manual combine error: Output file not found or worker return mismatch.")
 
-        except Exception as e_manual_combine:  # Manual ffmpeg combination also failed
+        except Exception as e_manual_combine:  # Manual ffmpeg combination also failed or cancelled
+            # Check if task was cancelled
+            if "cancelled by user" in str(e_manual_combine):
+                app.logger.info(f"🚫 Task {task_id}: Manual combine cancelled, stopping processing")
+                cancelled_tasks.discard(task_id)  # Clean up cancelled set
+                return  # Exit early, status already set to "cancelled"
+
             app.logger.error(f"❌ Manual combine task {task_id} also failed: {e_manual_combine!s}")
             traceback.print_exc()
 
@@ -933,9 +1034,8 @@ def _perform_individual_download(task_details):
             else:
                 resolution_text = f"({abr_val!s})" if abr_val else "(audio)"  # Handle None or string for ABR
 
-        user_facing_filename_base = (
-            f"{clean_title_for_storage} {resolution_text}" if resolution_text else clean_title_for_storage
-        )
+        # Check for MP3 conversion format (e.g., bestaudio_mp3_192, bestaudio_mp3_128)
+        is_mp3_conversion = format_id.startswith("bestaudio_mp3")
 
         # MEMORY d86a8376-601a-403f-a4e7-76e8b4c8916e
         is_hls_audio_only = selected_format.get("type") == "audio-only" and selected_format.get("protocol") in [
@@ -943,7 +1043,18 @@ def _perform_individual_download(task_details):
             "m3u8_native",
         ]
 
-        final_file_ext = "m4a" if is_hls_audio_only else selected_format.get("ext", "mp4")
+        # Determine final file extension
+        if is_mp3_conversion:
+            final_file_ext = "mp3"
+            resolution_text = "(MP3)"  # Override resolution text for MP3
+        elif is_hls_audio_only:
+            final_file_ext = "m4a"
+        else:
+            final_file_ext = selected_format.get("ext", "mp4")
+
+        user_facing_filename_base = (
+            f"{clean_title_for_storage} {resolution_text}" if resolution_text else clean_title_for_storage
+        )
         user_facing_filename = f"{user_facing_filename_base}.{final_file_ext}"
 
         # Create descriptive filename for individual downloads
@@ -960,19 +1071,43 @@ def _perform_individual_download(task_details):
             on_disk_filepath_pp_double_ext = os.path.join(PROCESSED_FILES_DIR, on_disk_filename_pp_double_ext)
             # files_to_potentially_clean.append(on_disk_filepath_pp_double_ext) # Add only if it's created and different
 
+        # For MP3 conversion, use "bestaudio" format selector; otherwise use the specified format_id
+        ydl_format = "bestaudio" if is_mp3_conversion else format_id
+
+        # For MP3 conversion, use outtmpl WITHOUT extension - postprocessor adds .mp3
+        if is_mp3_conversion:
+            # Strip the .mp3 extension from the output path for yt-dlp
+            outtmpl_path = on_disk_filepath_final_target.rsplit(".mp3", 1)[0]
+        else:
+            outtmpl_path = on_disk_filepath_final_target
+
         ydl_opts = {
-            "format": format_id,
-            "outtmpl": on_disk_filepath_final_target,  # yt-dlp will download to this path
+            "format": ydl_format,
+            "outtmpl": outtmpl_path,  # yt-dlp will download to this path
             "quiet": True,
             "no_warnings": True,
             "verbose": False,
             "overwrites": True,
+            "noplaylist": True,
             "socket_timeout": 300,
             "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading")],
         }
 
         ydl_postprocessors = []
-        if is_hls_audio_only:
+
+        # Add MP3 conversion postprocessor
+        if is_mp3_conversion:
+            # Get bitrate from selected_format (e.g., 192 or 128)
+            mp3_bitrate = str(int(selected_format.get("abr", 192)))
+            app.logger.info(f"🎵 Task {task_id}: MP3 conversion requested at {mp3_bitrate}kbps. Downloading best audio and converting.")
+            ydl_postprocessors.append(
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": mp3_bitrate,
+                }
+            )
+        elif is_hls_audio_only:
             app.logger.info(f"🎧 Task {task_id}: HLS audio format {format_id}. Applying FFmpegExtractAudio.")
             ydl_postprocessors.append(
                 {
@@ -984,9 +1119,12 @@ def _perform_individual_download(task_details):
 
         if ydl_postprocessors:
             ydl_opts["postprocessors"] = ydl_postprocessors
+            # Add postprocessor hook for MP3 conversion UI feedback
+            if is_mp3_conversion:
+                ydl_opts["postprocessor_hooks"] = [lambda d: _mp3_postprocessor_hook(task_id, d)]
 
         app.logger.info(
-            f"⏬ Task {task_id}: Downloading fmt {format_id}. URL: {video_url}, Target: {on_disk_filepath_final_target}"
+            f"⏬ Task {task_id}: Downloading fmt {ydl_format}. URL: {video_url}, Target: {on_disk_filepath_final_target}"
         )
         # app.logger.debug(f"Task {task_id}: yt-dlp options: {ydl_opts}") # Removed for brevity
 
@@ -1048,6 +1186,12 @@ def _perform_individual_download(task_details):
         COMPLETED_TASKS[task_id] = current_task_status  # Assign the same fully updated dict
 
     except Exception as e:
+        # Check if task was cancelled
+        if "cancelled by user" in str(e):
+            app.logger.info(f"🚫 Task {task_id}: Individual download cancelled, stopping processing")
+            cancelled_tasks.discard(task_id)  # Clean up cancelled set
+            return  # Exit early, status already set to "cancelled"
+
         app.logger.error(f"❌ Task {task_id}: Error in _perform_individual_download: {e!s}")
         if app.debug:  # Print full traceback if in debug mode
             traceback.print_exc()
