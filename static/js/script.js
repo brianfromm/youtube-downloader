@@ -690,15 +690,28 @@ function pollTaskStatus(
             // Simple progress for individual downloads
             toggleProgressContainer(buttonElement, true);
 
-            const statusSpan =
-              progressContainer.querySelector(".download-status");
-            const progressFill =
-              progressContainer.querySelector(".progress-bar-fill");
+            const statusSpan = progressContainer.querySelector(".download-status");
+            const progressFill = progressContainer.querySelector(".progress-bar-fill");
+            const labelSpan = progressContainer.querySelector(".download-label");
+            const iconSpan = progressContainer.querySelector(".download-icon");
+            const percent = data.progress_percent || 0;
 
-            if (statusSpan && progressFill) {
-              const percent = data.progress_percent || 0;
-              statusSpan.textContent = `${percent.toFixed(0)}%`;
-              progressFill.style.width = `${percent}%`;
+            // Check if MP3 conversion phase
+            const isMp3Progress = progressContainer.dataset.mp3 === "true";
+            const isConverting = data.phase && data.phase.startsWith("converting_mp3");
+
+            if (isMp3Progress && isConverting) {
+              // MP3 conversion phase - change label, keep bar at 100%
+              if (labelSpan) labelSpan.textContent = "Converting to MP3:";
+              if (iconSpan) iconSpan.textContent = "🔄";
+              if (statusSpan) statusSpan.textContent = "In progress...";
+              if (progressFill) progressFill.style.width = "100%";
+            } else {
+              // Standard downloading progress
+              if (labelSpan) labelSpan.textContent = "Downloading:";
+              if (iconSpan) iconSpan.textContent = "🔄";
+              if (statusSpan) statusSpan.textContent = `${percent.toFixed(0)}%`;
+              if (progressFill) progressFill.style.width = `${percent}%`;
             }
 
             // Attach cancel handler during processing
@@ -930,14 +943,20 @@ function addFormatItem(format, sectionType) {
   contentWrapper.appendChild(detailsDiv);
   contentWrapper.appendChild(actionsDiv);
 
-  // Add progress bar container for individual downloads (simple single progress)
+  // Add progress bar container for individual downloads
   const progressContainer = document.createElement("div");
   progressContainer.className = "progress-container";
   progressContainer.style.display = "none";
+
+  // Mark MP3 conversions for dynamic label change during conversion phase
+  const isMp3Conversion = format.format_id && format.format_id.startsWith("bestaudio_mp3");
+  if (isMp3Conversion) {
+    progressContainer.dataset.mp3 = "true";
+  }
   progressContainer.innerHTML = `
     <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 2px 0;">
-      <span style="font-size: 15px;">⏳</span>
-      <span style="font-weight: 600; color: #2c3e50;">Downloading:</span>
+      <span class="download-icon" style="font-size: 15px;">⏳</span>
+      <span class="download-label" style="font-weight: 600; color: #2c3e50;">Downloading:</span>
       <span class="download-status" style="color: #7f8c8d; font-weight: 500;">0%</span>
     </div>
     <div class="progress-bar-bg">
@@ -961,7 +980,7 @@ async function queueIndividualDownload(format, buttonElement, sectionType) {
 
   // console.log(`Queueing individual download for format ID: ${format.format_id}`);
   // Show queued state immediately
-  initializeQueuedState(buttonElement, false); // false = single progress bar
+  initializeQueuedState(buttonElement, false); // single progress bar for all individual downloads
 
   try {
     const currentUrl = urlInput.value.trim();
