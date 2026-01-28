@@ -351,6 +351,9 @@ def _parse_ffmpeg_progress(task_id: str, stderr_line: str, total_duration: float
 
     except Exception as e:
         app.logger.error(f"Error parsing FFmpeg progress for task {task_id}: {e}")
+        # Re-raise cancellation exceptions so they propagate to kill the FFmpeg process
+        if task_id in cancelled_tasks:
+            raise
 
 
 @app.route("/")
