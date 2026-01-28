@@ -68,6 +68,7 @@ docker-compose logs -f
 COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest
 USE_DEV_SERVER=false
 GUNICORN_WORKERS=1  # MUST be 1 due to in-memory queue
+FORWARDED_ALLOW_IPS=127.0.0.1  # Set to proxy IP/CIDR for proper client IP logging (e.g., 172.19.0.0/16)
 ```
 
 ## Automation Features

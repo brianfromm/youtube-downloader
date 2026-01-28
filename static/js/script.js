@@ -170,11 +170,17 @@ function addCombinedSection(videoFormats, audioFormats) {
             <span class="phase-icon">⏳</span>
             <span class="phase-label">Video:</span>
             <span class="phase-status">Waiting...</span>
+            <div class="progress-bar-bg" style="display: none;">
+                <div class="progress-bar-fill" style="width: 0%"></div>
+            </div>
         </div>
         <div class="phase-item" data-phase="audio">
             <span class="phase-icon">⏳</span>
             <span class="phase-label">Audio:</span>
             <span class="phase-status">Waiting...</span>
+            <div class="progress-bar-bg" style="display: none;">
+                <div class="progress-bar-fill" style="width: 0%"></div>
+            </div>
         </div>
         <div class="phase-item" data-phase="combining">
             <span class="phase-icon">⏳</span>
@@ -638,31 +644,45 @@ function pollTaskStatus(
             const combiningFill =
               combiningPhase.querySelector(".progress-bar-fill");
 
+            // Get progress bar elements for all phases
+            const videoProgress = videoPhase.querySelector(".progress-bar-bg");
+            const videoFill = videoPhase.querySelector(".progress-bar-fill");
+            const audioProgress = audioPhase.querySelector(".progress-bar-bg");
+            const audioFill = audioPhase.querySelector(".progress-bar-fill");
+
             // Update phases based on current state
             if (phase.includes("downloading_video")) {
+              const percent = data.progress_percent || 0;
               videoPhase.querySelector(".phase-icon").textContent = "⏳";
               videoPhase.querySelector(".phase-status").textContent = `${
                 data.progress_percent
                   ? data.progress_percent.toFixed(0) + "%"
                   : "In progress..."
               }`;
+              videoProgress.style.display = "block";
+              videoFill.style.width = percent + "%";
               audioPhase.querySelector(".phase-icon").textContent = "⏳";
               audioPhase.querySelector(".phase-status").textContent =
                 "Waiting...";
+              audioProgress.style.display = "none";
               combiningPhase.querySelector(".phase-icon").textContent = "⏳";
               combiningPhase.querySelector(".phase-status").textContent =
                 "Waiting...";
               combiningProgress.style.display = "none";
             } else if (phase.includes("downloading_audio")) {
+              const percent = data.progress_percent || 0;
               videoPhase.querySelector(".phase-icon").textContent = "✓";
               videoPhase.querySelector(".phase-status").textContent =
                 "Downloaded";
+              videoProgress.style.display = "none";
               audioPhase.querySelector(".phase-icon").textContent = "⏳";
               audioPhase.querySelector(".phase-status").textContent = `${
                 data.progress_percent
                   ? data.progress_percent.toFixed(0) + "%"
                   : "In progress..."
               }`;
+              audioProgress.style.display = "block";
+              audioFill.style.width = percent + "%";
               combiningPhase.querySelector(".phase-icon").textContent = "⏳";
               combiningPhase.querySelector(".phase-status").textContent =
                 "Waiting...";
@@ -671,9 +691,11 @@ function pollTaskStatus(
               videoPhase.querySelector(".phase-icon").textContent = "✓";
               videoPhase.querySelector(".phase-status").textContent =
                 "Downloaded";
+              videoProgress.style.display = "none";
               audioPhase.querySelector(".phase-icon").textContent = "✓";
               audioPhase.querySelector(".phase-status").textContent =
                 "Downloaded";
+              audioProgress.style.display = "none";
               combiningPhase.querySelector(".phase-icon").textContent = "⏳";
               combiningProgress.style.display = "block";
               combiningFill.style.width = (data.progress_percent || 0) + "%";
