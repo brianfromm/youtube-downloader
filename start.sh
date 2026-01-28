@@ -15,5 +15,6 @@ else
     --bind 0.0.0.0:${APP_PORT:-8080} \
     --log-level ${GUNICORN_LOGLEVEL:-info} \
     --timeout ${GUNICORN_TIMEOUT:-0} \
+    --forwarded-allow-ips "${FORWARDED_ALLOW_IPS:-127.0.0.1}" \
     server:app
 fi

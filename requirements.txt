@@ -1,8 +1,8 @@
 flask>=3.1.2
 flask-cors>=6.0.2
-yt-dlp[default]>=2025.10.14
-gunicorn>=23.0.0
-urllib3>=2.6.2
-werkzeug>=3.1.4
-certifi>=2025.11.12
-pip-audit>=2.8.0
+yt-dlp[default]>=2025.12.08
+gunicorn>=24.1.1
+urllib3>=2.6.3
+werkzeug>=3.1.5
+certifi>=2026.1.4
+pip-audit>=2.10.0

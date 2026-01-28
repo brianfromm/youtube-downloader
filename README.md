@@ -124,6 +124,13 @@ Available environment variables:
   - **Usage:** E.g., `GUNICORN_LOGLEVEL=info`. Common values: `debug`, `info`, `warning`, `error`.
   - **Default (if not set):** Defaults to `info` in `start.sh`.
 
+- **`FORWARDED_ALLOW_IPS`**:
+
+  - **Purpose:** Specifies trusted proxy IPs/networks for `X-Forwarded-*` headers when running behind a reverse proxy (e.g., Nginx Proxy Manager, Traefik). This enables proper client IP logging instead of seeing the proxy's IP.
+  - **Usage:** E.g., `FORWARDED_ALLOW_IPS=172.19.0.0/16` for a Docker network, or `FORWARDED_ALLOW_IPS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16` for all private networks.
+  - **Default (if not set):** Defaults to `127.0.0.1` in `start.sh` (only trusts localhost, safe for direct exposure).
+  - **Note:** CIDR notation support requires Gunicorn 24.1+.
+
 - **`APP_PORT`**:
 
   - **Purpose:** Defines the port number that the application (Flask/Gunicorn) listens on _inside_ the Docker container.
@@ -146,6 +153,7 @@ USE_DEV_SERVER=true
 # GUNICORN_THREADS=4 # Optional: override default for local Gunicorn testing
 # GUNICORN_LOGLEVEL=debug # Optional: override default for verbose local Gunicorn testing
 # GUNICORN_TIMEOUT=0 # Optional: 0 = unlimited (recommended for large files), or set specific seconds
+# FORWARDED_ALLOW_IPS=127.0.0.1 # Optional: set proxy IP/CIDR if behind reverse proxy
 # APP_PORT=8080 # Optional: override default internal port
 # HOST_PORT=8080 # Optional: override default host port mapping
 ```
@@ -159,6 +167,7 @@ GUNICORN_WORKERS=1 # IMPORTANT: Must be 1 due to in-memory task queue
 GUNICORN_THREADS=4 # Default, can be adjusted based on NAS performance
 GUNICORN_LOGLEVEL=info # Default, can be changed to 'warning' for quieter logs
 GUNICORN_TIMEOUT=0 # Default: 0 = unlimited timeout (recommended for large video files)
+# FORWARDED_ALLOW_IPS=172.19.0.0/16 # Optional: set to your reverse proxy's Docker network CIDR
 APP_PORT=8080 # Standard internal port
 HOST_PORT=8080 # Standard host mapping for this service
 # COMPOSE_PLATFORM=linux/amd64 # Usually not needed if building on/for amd64, or if image is pre-built for amd64
