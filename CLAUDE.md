@@ -89,6 +89,33 @@ FORWARDED_ALLOW_IPS=127.0.0.1  # Set to proxy IP/CIDR for proper client IP loggi
 - Error auto-reset after 5 seconds for failed tasks
 - Refactored codebase with helper functions for cleaner maintainability
 
+## PO Token Integration (SABR Workaround)
+
+For videos where YouTube enforces SABR streaming, the application uses:
+- **bgutil service**: Generates PO (Proof of Origin) tokens
+- **bgutil-ytdlp-pot-provider**: yt-dlp plugin that fetches tokens from bgutil
+- **mweb client**: Mobile web client that works with PO tokens
+- **Node.js runtime**: Required for JavaScript challenge solving
+
+The bgutil service runs as a separate container and is required for downloading DASH formats (high-quality audio/video) from certain videos.
+
+### Running bgutil Server (for PO Token Support - Local Development)
+
+Some YouTube videos require PO tokens for DASH format downloads. To enable this locally:
+
+```bash
+# Clone and build bgutil server (one-time setup)
+cd /tmp
+git clone https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git bgutil-server
+cd bgutil-server/server
+npm install && npx tsc
+
+# Start bgutil server (run in separate terminal)
+node /tmp/bgutil-server/server/build/main.js
+```
+
+The server runs on http://127.0.0.1:4416. The app gracefully degrades if unavailable.
+
 ## Commit Patterns (Semantic Release)
 
 Use these commit prefixes for automatic versioning:

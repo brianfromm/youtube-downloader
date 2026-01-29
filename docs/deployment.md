@@ -1,6 +1,6 @@
-# Deployment Guide: YouTube Video Extractor
+# Deployment Guide: YouTube Video Downloader
 
-This document provides detailed instructions for deploying the YouTube Video Extractor application using Docker and Docker Compose.
+This document provides detailed instructions for deploying the YouTube Video Downloader application using Docker and Docker Compose.
 
 ## Prerequisites
 
@@ -15,8 +15,8 @@ This is the recommended method for deploying on a server like a Synology NAS.
 1.  **Prepare the Directory Structure:**
     Create a directory on your server where the application will live, for example:
     ```bash
-    mkdir -p /volume1/docker/youtube-extractor
-    cd /volume1/docker/youtube-extractor
+    mkdir -p /volume1/docker/youtube-downloader
+    cd /volume1/docker/youtube-downloader
     ```
 
 2.  **Create `docker-compose.yml`:**
@@ -26,9 +26,9 @@ This is the recommended method for deploying on a server like a Synology NAS.
     version: '3.8'
 
     services:
-      youtube-extractor:
+      youtube-downloader:
         image: ${COMPOSE_IMAGE:-ghcr.io/brianfromm/youtube-downloader:latest} # Or your specific production image
-        container_name: youtube-extractor
+        container_name: youtube-downloader
         restart: unless-stopped
         ports:
           - "${HOST_PORT:-8080}:${APP_PORT:-8080}"
@@ -52,10 +52,10 @@ This is the recommended method for deploying on a server like a Synology NAS.
     ```
 
 3.  **Create `.env` file:**
-    In the same directory (`/volume1/docker/youtube-extractor`), create an `.env` file to specify your production environment variables:
+    In the same directory (`/volume1/docker/youtube-downloader`), create an `.env` file to specify your production environment variables:
 
     ```env
-    # --- Production .env for YouTube Video Extractor ---
+    # --- Production .env for YouTube Video Downloader ---
 
     # Docker Image Configuration
     COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest # Replace with your actual production image and tag
@@ -103,7 +103,7 @@ This is the recommended method for deploying on a server like a Synology NAS.
 
 7.  **Viewing Logs:**
     ```bash
-    docker-compose logs -f youtube-extractor
+    docker-compose logs -f youtube-downloader
     ```
 
 8.  **Updating the Application:**

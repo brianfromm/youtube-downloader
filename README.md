@@ -22,11 +22,13 @@ This project started from a need to occasionally download videos without relying
 - **Descriptive File Storage:** Processed files are stored with readable names including video title and quality information.
 - **Automated Dependency Updates:** GitHub Actions workflow automatically rebuilds with latest yt-dlp and FFmpeg weekly.
 - **Docker Support:** Includes `Dockerfile` and `docker-compose.yml` for easy setup and deployment in a containerized environment.
+- **SABR Streaming Support:** Handles videos with YouTube's SABR (Stream-Based Adaptive Bitrate) restrictions via PO token generation.
 
 ## Tech Stack
 
 - **Backend:** Python 3.12+, Flask
 - **Video Processing:** `yt-dlp`, FFmpeg
+- **PO Token Support:** `bgutil-ytdlp-pot-provider` (for SABR streaming workaround)
 - **Frontend:** HTML, CSS (vanilla), JavaScript (vanilla)
 - **Containerization:** Docker, Docker Compose
 
@@ -36,7 +38,7 @@ A brief overview of the key files and directories:
 
 - `server.py`: The main Flask application.
 - `templates/`: Contains HTML templates.
-  - `youtube-extractor.html`: The main HTML file for the web interface.
+  - `youtube-downloader.html`: The main HTML file for the web interface.
 - `.github/workflows/`: GitHub Actions automation.
   - `rebuild-dependencies.yml`: Weekly dependency update workflow.
 - `static/`: Contains static assets.
@@ -76,9 +78,9 @@ Available environment variables:
 - **`COMPOSE_IMAGE`**:
 
   - **Purpose:** Specifies the Docker image name and tag to use.
-  - **Local Development (in `.env.local`):** Set to a local-specific tag, e.g., `COMPOSE_IMAGE=youtube-extractor-local:latest`. When you run `docker-compose build`, the locally built image will be tagged with this name.
+  - **Local Development (in `.env.local`):** Set to a local-specific tag, e.g., `COMPOSE_IMAGE=youtube-downloader-local:latest`. When you run `docker-compose build`, the locally built image will be tagged with this name.
   - **Production (in `.env` on server):** Set to your pre-built production image URL, e.g., `COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest`. This allows Watchtower (or manual pulls) to use the correct production image.
-  - **Default (if not set):** Defaults to `youtube-extractor-default:latest` in `docker-compose.yml`, intended for local builds if no specific `COMPOSE_IMAGE` is provided.
+  - **Default (if not set):** Defaults to `youtube-downloader-default:latest` in `docker-compose.yml`, intended for local builds if no specific `COMPOSE_IMAGE` is provided.
 
 - **`COMPOSE_PLATFORM`**:
 
@@ -145,7 +147,7 @@ Available environment variables:
 **Example `.env.local` for an Apple Silicon Mac developer:**
 
 ```
-COMPOSE_IMAGE=youtube-extractor-local:latest
+COMPOSE_IMAGE=youtube-downloader-local:latest
 COMPOSE_PLATFORM=linux/arm64/v8 # Or linux/amd64 if building for that target
 COMPOSE_BAKE=true # Enable Docker Buildx Bake for building
 USE_DEV_SERVER=true
@@ -227,7 +229,7 @@ HOST_PORT=8080 # Standard host mapping for this service
     ```
 
 2.  **Using `docker-compose` (recommended for Docker):**
-    This will build the image and run the container.
+    This will build the image and run the container, including the bgutil service for PO token support.
 
     ```bash
     docker-compose up --build
@@ -239,15 +241,17 @@ HOST_PORT=8080 # Standard host mapping for this service
     docker-compose up --build -d
     ```
 
+    **Note:** The bgutil service starts automatically and enables downloads from videos with SABR streaming restrictions.
+
 3.  **Alternatively, build and run manually:**
 
     - **Build the Docker image:**
       ```bash
-      docker build -t youtube-extractor .
+      docker build -t youtube-downloader .
       ```
     - **Run the Docker container:**
       ```bash
-      docker run -p 8080:8080 youtube-extractor
+      docker run -p 8080:8080 youtube-downloader
       ```
 
 4.  Open your web browser and navigate to `http://localhost:8080`.
