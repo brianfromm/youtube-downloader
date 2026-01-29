@@ -17,6 +17,30 @@ from flask import Flask, jsonify, render_template, request, send_from_directory
 from flask_cors import CORS
 
 app = Flask(__name__)
+
+# --- PO Token / bgutil Configuration ---
+# BGUTIL_BASE_URL: URL of the bgutil-ytdlp-pot-provider server for PO token generation
+# - Default: http://127.0.0.1:4416 for local development
+# - Docker: Set to http://bgutil:4416 via docker-compose.yml environment
+BGUTIL_BASE_URL = os.environ.get("BGUTIL_BASE_URL", "http://127.0.0.1:4416")
+
+
+def get_ytdlp_base_opts():
+    """
+    Return base yt-dlp options for PO token support and SABR workaround.
+
+    These options enable downloading from videos that enforce SABR streaming by:
+    - Using Node.js for JavaScript challenge solving
+    - Using the mweb (mobile web) client which works with PO tokens
+    - Configuring the bgutil plugin to fetch PO tokens from the bgutil server
+    """
+    return {
+        "js_runtimes": {"node": {}},  # Enable Node.js for JS challenge solving
+        "extractor_args": {
+            "youtube": {"player_client": ["mweb"]},
+            "youtubepot-bgutilhttp": {"base_url": [BGUTIL_BASE_URL]},
+        },
+    }
 CORS(app)
 app.logger.propagate = False  # Prevent duplicate logs when using Gunicorn
 
@@ -359,7 +383,7 @@ def _parse_ffmpeg_progress(task_id: str, stderr_line: str, total_duration: float
 @app.route("/")
 def serve_html():
     try:
-        return render_template("youtube-extractor.html")
+        return render_template("youtube-downloader.html")
     except Exception as e:
         app.logger.error(f"Error rendering HTML template: {e!s}")  # For server-side logging
         return f"Error rendering HTML template: {e!s}.", 500  # Send error to client
@@ -456,7 +480,7 @@ def extract_video_info():
         if clean_url != url:
             app.logger.debug(f"🧹 Cleaned URL from original: {url}")  # Changed to debug, less critical
 
-        ydl_opts = {"quiet": False, "no_warnings": False, "extract_flat": False, "socket_timeout": 300}
+        ydl_opts = {"quiet": False, "no_warnings": False, "extract_flat": False, "socket_timeout": 300, **get_ytdlp_base_opts()}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(clean_url, download=False)
 
@@ -665,6 +689,7 @@ def _manual_combine_for_worker(
             "verbose": False,
             "noplaylist": True,
             "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading_video")],
+            **get_ytdlp_base_opts(),
         }
         with yt_dlp.YoutubeDL(ydl_video_opts) as ydl:
             app.logger.info(f"⏬ Task {task_id}: Downloading video for manual combine...")
@@ -682,6 +707,7 @@ def _manual_combine_for_worker(
             "verbose": False,
             "noplaylist": True,
             "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading_audio")],
+            **get_ytdlp_base_opts(),
         }
         with yt_dlp.YoutubeDL(ydl_audio_opts) as ydl:
             app.logger.info(f"⏬ Task {task_id}: Downloading audio for manual combine...")
@@ -873,6 +899,7 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
                 "ignoreerrors": False,  # Let it fail to trigger manual fallback if direct merge fails
                 "socket_timeout": 300,
                 "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading_combined")],
+                **get_ytdlp_base_opts(),
             }
         else:
             ydl_opts_combine = {
@@ -889,6 +916,7 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
                 "socket_timeout": 300,
                 "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading_combined")],
                 "postprocessor_hooks": [lambda d: _postprocessor_hook(task_id, d)],
+                **get_ytdlp_base_opts(),
             }
         # app.logger.info(f"Task {task_id}: Using yt-dlp opts: {ydl_opts_combine}") # Removed for brevity
 
@@ -999,7 +1027,7 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
 
 def _perform_individual_download(task_details):
     task_id = task_details.get("task_id")
-    video_url = task_details.get("url")  # This is the original YouTube page URL
+    video_url = clean_youtube_url(task_details.get("url"))  # Clean playlist params from URL
     format_id = task_details.get("format_id")
     # 'selected_format' now comes from 'selected_format_details' passed by queue_individual_download_task
     selected_format = task_details.get("selected_format")
@@ -1094,6 +1122,7 @@ def _perform_individual_download(task_details):
             "noplaylist": True,
             "socket_timeout": 300,
             "progress_hooks": [lambda d: _update_progress(task_id, d, phase="downloading")],
+            **get_ytdlp_base_opts(),
         }
 
         ydl_postprocessors = []

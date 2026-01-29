@@ -1,16 +1,31 @@
 services:
-  youtube-extractor:
+  # bgutil service provides PO (Proof of Origin) tokens for SABR streaming workaround
+  # Required for downloading DASH formats from certain YouTube videos
+  bgutil:
+    image: brainicism/bgutil-ytdlp-pot-provider
+    container_name: bgutil-pot-provider
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4416/ping', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  youtube-downloader:
     # Image configuration:
-    # - For local development: Set COMPOSE_IMAGE in '.env.local' (e.g., COMPOSE_IMAGE=youtube-extractor-local:latest).
+    # - For local development: Set COMPOSE_IMAGE in '.env.local' (e.g., COMPOSE_IMAGE=youtube-downloader-local:latest).
     #   This will build and use a local image with that tag.
     # - For production (e.g., Synology NAS with Watchtower): Set COMPOSE_IMAGE in an '.env' file on the server
     #   (or via Container Manager environment settings) to your production image (e.g., COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest).
-    # - If COMPOSE_IMAGE is not set in any .env file, it defaults to 'youtube-extractor-default:latest' for local builds.
-    image: ${COMPOSE_IMAGE:-youtube-extractor-default:latest}
+    # - If COMPOSE_IMAGE is not set in any .env file, it defaults to 'youtube-downloader-default:latest' for local builds.
+    image: ${COMPOSE_IMAGE:-youtube-downloader-default:latest}
     build:
       context: .
     platform: ${COMPOSE_PLATFORM:-linux/amd64}
-    container_name: youtube-extractor
+    container_name: youtube-downloader
+    depends_on:
+      bgutil:
+        condition: service_healthy
     ports:
       # HOST_PORT defaults to APP_PORT if not set in .env file
       - "${HOST_PORT:-${APP_PORT:-8080}}:${APP_PORT:-8080}"
@@ -23,6 +38,7 @@ services:
       - FLASK_ENV=production
       - USE_DEV_SERVER=${USE_DEV_SERVER:-false}
       - APP_PORT=${APP_PORT:-8080}
+      - BGUTIL_BASE_URL=http://bgutil:4416
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
