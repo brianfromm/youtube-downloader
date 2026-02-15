@@ -438,7 +438,7 @@ def health():
 
 
 def clean_youtube_url(url):
-    video_id_match = re.search(r"(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})", url)
+    video_id_match = re.search(r"(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})", url)
     if not video_id_match:
         return url
     video_id = video_id_match.group(1)

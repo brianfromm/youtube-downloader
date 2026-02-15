@@ -13,7 +13,7 @@ This project started from a need to occasionally download videos without relying
 - **Real-Time Progress Tracking:** Visual progress bars with phase indicators (Video → Audio → Combining) for combination tasks, and streamlined single-bar progress for direct downloads.
 - **Cancellable Downloads:** Cancel both queued and in-progress downloads at any time with a custom confirmation modal. Cancelled tasks automatically reset after 3 seconds for easy retry.
 - **Error Handling:** Failed downloads display error messages and automatically reset after 5 seconds for easy retry.
-- **URL Compatibility:** Supports standard `youtube.com/watch?v=` URLs and shortened `youtu.be/` links.
+- **URL Compatibility:** Supports standard `youtube.com/watch?v=` URLs, shortened `youtu.be/` links, and `youtube.com/live/`, `/shorts/`, `/embed/`, `/v/`, and `m.youtube.com` URLs.
 - **User-Friendly Web Interface:** Simple and intuitive interface to paste a URL and access download options.
 - **Video Thumbnail Preview:** Displays a thumbnail of the YouTube video.
 - **Mobile-Responsive Design:** Fully optimized UI for mobile devices with touch-friendly controls and adaptive layouts.
@@ -217,6 +217,23 @@ HOST_PORT=8080 # Standard host mapping for this service
 
     **Note:** Flask dev server may timeout on downloads longer than 3-5 minutes. For testing large files, use Gunicorn (`./start.sh`).
 
+6.  **Optional: Run the bgutil PO token server (for high-quality downloads):**
+
+    Some YouTube videos require PO tokens to access higher quality DASH formats (720p+). Without this server, only lower quality combined formats (e.g., 360p) may be available.
+
+    ```bash
+    # One-time setup
+    cd /tmp
+    git clone https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git bgutil-server
+    cd bgutil-server/server
+    npm install && npx tsc
+
+    # Start the server (run in a separate terminal)
+    node /tmp/bgutil-server/server/build/main.js
+    ```
+
+    The server runs on `http://127.0.0.1:4416`. The app gracefully degrades if it's not available.
+
 6.  Open your web browser and navigate to `http://localhost:8080` or `http://0.0.0.0:8080`.
 
 ### 2. Using Docker
@@ -259,7 +276,7 @@ HOST_PORT=8080 # Standard host mapping for this service
 ## How to Use
 
 1.  Open the web application in your browser.
-2.  Paste a YouTube video URL (e.g., `https://www.youtube.com/watch?v=dQw4w9WgXcQ` or `https://youtu.be/dQw4w9WgXcQ`) into the input field.
+2.  Paste a YouTube video URL (e.g., `https://www.youtube.com/watch?v=dQw4w9WgXcQ`, `https://youtu.be/dQw4w9WgXcQ`, or `https://www.youtube.com/live/dQw4w9WgXcQ`) into the input field.
 3.  Click "Analyze Video".
 4.  The application will display video details and a list of available download formats.
     - **High Quality Combined:** Choose a video resolution to combine with the best audio. The button will show processing status with a multi-phase progress bar (Video → Audio → Combining), and the download will start automatically once the file is ready.

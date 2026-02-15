@@ -8,13 +8,13 @@ const clearInputIcon = document.getElementById("clearInputIcon");
 
 function isValidYouTubeUrl(url) {
   const regex =
-    /^(https?:\/\/)?(www\.)?(youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/;
+    /^(https?:\/\/)?(www\.|m\.)?(youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/|v\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/;
   return regex.test(url);
 }
 
 function extractVideoId(url) {
   const match = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
   );
   return match ? match[1] : null;
 }
