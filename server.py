@@ -1615,11 +1615,6 @@ def favicon():
     return send_from_directory(".", "favicon.ico")
 
 
-@app.route("/health", methods=["GET"])
-def health_check():
-    return jsonify({"status": "Server is running"}), 200
-
-
 # Start the background worker thread
 # Ensure processed_files_dir exists when module loads
 if not os.path.exists(PROCESSED_FILES_DIR):
