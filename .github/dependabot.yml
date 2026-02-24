@@ -14,6 +14,9 @@ updates:
     labels:
       - "dependencies"
       - "python"
+    ignore:
+      - dependency-name: "gunicorn"
+        versions: ["25.1.0"]
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
