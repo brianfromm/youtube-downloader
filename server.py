@@ -874,6 +874,10 @@ def _perform_combination_task(task_details):  # Renamed from _perform_actual_com
 
         if is_video_compatible and is_audio_compatible:
             compatible_for_direct_merge = True
+            # Signal to frontend immediately so it can show the right progress UI
+            current_status = task_statuses.get(task_id, {})
+            current_status["merge_type"] = "direct"
+            task_statuses[task_id] = current_status
             app.logger.info(
                 f"✅ Task {task_id}: Formats compatible for direct merge. "
                 f"Video: {video_vcodec} ({video_ext}), Audio: {audio_acodec} ({audio_ext})."
@@ -1574,11 +1578,20 @@ def download_processed_file(task_id):
                 f"[DOWNLOAD_PROCESSED] Task {task_id}: File '{actual_file_path_on_disk}' found. "
                 f"Serving as '{download_name_header}'."
             )
+            # Override MIME types that Python's mimetypes module gets wrong
+            # (e.g., .m4a → audio/mp4a-latm instead of audio/mp4, which browsers flag as insecure)
+            mime_overrides = {
+                ".m4a": "audio/mp4",
+                ".webm": "audio/webm",
+            }
+            ext = os.path.splitext(actual_file_path_on_disk)[1].lower()
+            mimetype = mime_overrides.get(ext)
             return send_from_directory(
                 os.path.dirname(actual_file_path_on_disk),
                 os.path.basename(actual_file_path_on_disk),
                 as_attachment=True,
                 download_name=download_name_header,
+                mimetype=mimetype,
             )
         else:
             app.logger.error(

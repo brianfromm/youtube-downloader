@@ -156,7 +156,7 @@ function addCombinedSection(videoFormats, audioFormats) {
     combinedItem.innerHTML = `
     <div class="format-item-content">
         <div class="format-details">
-            <div class="format-type">⚡ ${videoQualityDisplay} + Best Audio (MP4) [Format ${videoFormat.format_id}]</div>
+            <div class="format-type">⚡ ${videoQualityDisplay} + Best Audio (MP4)</div>
             <div class="format-specs">${codecInfo}</div>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -605,6 +605,19 @@ function pollTaskStatus(
       let statusText =
         data.status.charAt(0).toUpperCase() + data.status.slice(1);
 
+      if (data.status === "queued" || data.status === "processing") {
+        // For direct merge tasks, switch to simple UI as soon as we know
+        if (data.merge_type === "direct" && buttonElement.progressContainer) {
+          const pc = buttonElement.progressContainer;
+          const audioPhase = pc.querySelector('[data-phase="audio"]');
+          const combiningPhase = pc.querySelector('[data-phase="combining"]');
+          const videoLabel = pc.querySelector('[data-phase="video"] .phase-label');
+          if (audioPhase) audioPhase.style.display = "none";
+          if (combiningPhase) combiningPhase.style.display = "none";
+          if (videoLabel) videoLabel.textContent = "Downloading:";
+        }
+      }
+
       if (data.status === "queued") {
         // Queued state - progress UI already shows "Queued", button shows "Cancel"
         // Nothing to do here, just continue polling
@@ -651,8 +664,28 @@ function pollTaskStatus(
             const audioFill = audioPhase.querySelector(".progress-bar-fill");
 
             // Update phases based on current state
-            if (phase.includes("downloading_video")) {
+            if (phase.includes("downloading_combined")) {
+              // Direct merge: yt-dlp downloads and merges in one step
+              // Show a single simplified progress bar using the video phase element
               const percent = data.progress_percent || 0;
+              videoPhase.querySelector(".phase-label").textContent =
+                "Downloading:";
+              videoPhase.querySelector(".phase-icon").textContent = "⏳";
+              videoPhase.querySelector(".phase-status").textContent = `${
+                data.progress_percent
+                  ? data.progress_percent.toFixed(0) + "%"
+                  : "In progress..."
+              }`;
+              videoProgress.style.display = "block";
+              videoFill.style.width = percent + "%";
+              audioPhase.style.display = "none";
+              combiningPhase.style.display = "none";
+            } else if (phase.includes("downloading_video")) {
+              const percent = data.progress_percent || 0;
+              videoPhase.style.display = "";
+              audioPhase.style.display = "";
+              combiningPhase.style.display = "";
+              videoPhase.querySelector(".phase-label").textContent = "Video:";
               videoPhase.querySelector(".phase-icon").textContent = "⏳";
               videoPhase.querySelector(".phase-status").textContent = `${
                 data.progress_percent
