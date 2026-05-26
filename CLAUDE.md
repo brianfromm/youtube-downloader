@@ -22,16 +22,17 @@ pip install -r requirements-dev.txt
 # Run locally (always activate venv first)
 source venv/bin/activate
 
-# Option 1: Flask dev server (fast restart, may timeout on long downloads)
-python server.py
+# Terminal 1: Start bgutil PO token server (required for all DASH formats)
+node /tmp/bgutil-server/server/build/main.js
 
-# Option 2: Gunicorn (no timeouts, production-like, recommended for testing)
-./start.sh
+# Terminal 2: Start the app
+./start.sh          # Gunicorn (recommended, no timeouts)
+# or: python server.py  # Flask dev server (fast restart, may timeout on long downloads)
 
 # Access: http://localhost:8080
 ```
 
-**Important:** Flask dev server may timeout on long downloads (>3-5 min). For testing large downloads, use Gunicorn via `./start.sh`.
+**Important:** Without the bgutil token server, most videos will only show a single format. With it running, all DASH formats (video resolutions, audio qualities, MP3) become available. See [PO Token Integration](#po-token-integration-sabr-workaround) for one-time setup.
 
 ### Docker Commands
 
