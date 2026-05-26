@@ -388,8 +388,8 @@ def serve_html():
     try:
         return render_template("youtube-downloader.html")
     except Exception as e:
-        app.logger.error(f"Error rendering HTML template: {e!s}")  # For server-side logging
-        return f"Error rendering HTML template: {e!s}.", 500  # Send error to client
+        app.logger.error(f"Error rendering HTML template: {e!s}")
+        return "Error rendering HTML template.", 500
 
 
 @app.route("/health")
@@ -437,7 +437,7 @@ def health():
 
     except Exception as e:
         app.logger.error(f"Health check failed: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Health check failed"}), 500
 
 
 def clean_youtube_url(url):
@@ -663,7 +663,7 @@ def extract_video_info():
         url_for_log = clean_url if "clean_url" in locals() else "unknown URL"
         app.logger.error(f"❌ Extraction failed for {url_for_log}: {e!s}")
         traceback.print_exc()
-        return jsonify({"error": f"Failed to extract video information: {e!s}"}), 500
+        return jsonify({"error": "Failed to extract video information"}), 500
 
 
 # Manually download video and audio, then combine with FFmpeg. Called by worker.
@@ -1456,7 +1456,7 @@ def combine_video_audio_queued():
         # print(f"❌ Error queueing combination task: {e!s}", flush=True) # Removed, traceback is kept
         app.logger.error(f"❌ Error queueing combination task for {url if 'url' in locals() else 'unknown URL'}: {e!s}")
         traceback.print_exc()
-        return jsonify({"error": f"Error queueing task: {e!s}"}), 500
+        return jsonify({"error": "Error queueing task"}), 500
 
 
 @app.route("/queue_individual_download", methods=["POST"])
@@ -1511,7 +1511,7 @@ def queue_individual_download_task():
         url_str = url if "url" in locals() else "unknown URL"
         app.logger.error(f"❌ Error queueing ind. download for {url_str} (fmt: {format_id_str}): {e!s}")
         traceback.print_exc()
-        return jsonify({"error": f"Error queueing individual download: {e!s}"}), 500
+        return jsonify({"error": "Error queueing individual download"}), 500
 
 
 @app.route("/task_status/<task_id>", methods=["GET"])
@@ -1673,7 +1673,7 @@ if __name__ == "__main__":
         )
         # debug=True enables auto-reloader and debugger. Flask's reloader handles threads better.
         # threaded=True is generally good for dev server to handle multiple requests like polling.
-        app.run(host="0.0.0.0", port=flask_port_info, debug=True, threaded=True)
+        app.run(host="0.0.0.0", port=flask_port_info, debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true", threaded=True)
     else:
         # When using Gunicorn, it will run the 'app' object directly.
         # The host and port will be configured via Gunicorn's command line arguments.
