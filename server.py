@@ -10,11 +10,12 @@ import traceback  # For detailed error logging
 import uuid
 from contextlib import suppress
 from threading import Timer
+from typing import Any
 from urllib.parse import quote
 
-import yt_dlp
+import yt_dlp  # type: ignore[import-untyped]
 from flask import Flask, jsonify, render_template, request, send_from_directory
-from flask_cors import CORS
+from flask_cors import CORS  # type: ignore[import-untyped]
 
 app = Flask(__name__)
 
@@ -41,6 +42,8 @@ def get_ytdlp_base_opts():
             "youtubepot-bgutilhttp": {"base_url": [BGUTIL_BASE_URL]},
         },
     }
+
+
 CORS(app)
 app.logger.propagate = False  # Prevent duplicate logs when using Gunicorn
 
@@ -79,10 +82,10 @@ if not os.path.exists(PROCESSED_FILES_DIR):
 app.logger.info("Flask logger initialized.")
 
 # --- Task Queue Setup ---
-task_queue = queue.Queue()
-task_statuses = {}  # Stores status and result (e.g., filename or error)
-COMPLETED_TASKS = {}  # Stores the final state of tasks (completed or failed) for persistent lookup
-cancelled_tasks = set()  # Track task IDs that should be cancelled
+task_queue: queue.Queue[dict[str, Any]] = queue.Queue()
+task_statuses: dict[str, dict[str, Any]] = {}
+COMPLETED_TASKS: dict[str, dict[str, Any]] = {}
+cancelled_tasks: set[str] = set()
 PROCESSED_FILES_DIR = os.path.join(os.getcwd(), "processed_files")
 # --- End Task Queue Setup ---
 
@@ -147,7 +150,7 @@ def cleanup_old_files(max_age_hours: int = 168) -> None:  # 7 days = 168 hours
 
     cutoff_time = time.time() - (max_age_hours * 3600)
     cleaned_count = 0
-    total_size_mb = 0
+    total_size_mb = 0.0
 
     try:
         for filename in os.listdir(PROCESSED_FILES_DIR):
@@ -212,7 +215,7 @@ def schedule_cleanup() -> None:
     app.logger.debug("🔄 Next cleanup scheduled in 24 hours")
 
 
-def _update_progress(task_id: str, progress_data: dict[str, any], phase: str = "downloading") -> None:
+def _update_progress(task_id: str, progress_data: dict[str, Any], phase: str = "downloading") -> None:
     """Update task progress from yt-dlp progress hooks"""
     try:
         # Check if task has been cancelled - abort download immediately
@@ -268,7 +271,7 @@ def _update_progress(task_id: str, progress_data: dict[str, any], phase: str = "
         app.logger.error(f"Error updating progress for task {task_id}: {e}")
 
 
-def _postprocessor_hook(task_id: str, d: dict[str, any]) -> None:
+def _postprocessor_hook(task_id: str, d: dict[str, Any]) -> None:
     """Update task status during yt-dlp postprocessing (FFmpeg transcoding)"""
     try:
         status = d.get("status")
@@ -293,7 +296,7 @@ def _postprocessor_hook(task_id: str, d: dict[str, any]) -> None:
         app.logger.error(f"Error in postprocessor hook for task {task_id}: {e}")
 
 
-def _mp3_postprocessor_hook(task_id: str, d: dict[str, any]) -> None:
+def _mp3_postprocessor_hook(task_id: str, d: dict[str, Any]) -> None:
     """Update task status during MP3 conversion for UI feedback"""
     try:
         status = d.get("status")
@@ -416,7 +419,7 @@ def health():
             "worker_alive": worker_alive,
             "disk_free_gb": round(disk_free_gb, 2),
             "processed_files_count": processed_files_count,
-            "uptime_seconds": int(time.time() - app.start_time) if hasattr(app, "start_time") else 0,
+            "uptime_seconds": int(time.time() - app.config["START_TIME"]) if "START_TIME" in app.config else 0,
         }
 
         # Determine if unhealthy based on thresholds
@@ -438,7 +441,9 @@ def health():
 
 
 def clean_youtube_url(url):
-    video_id_match = re.search(r"(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})", url)
+    video_id_match = re.search(
+        r"(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})", url
+    )
     if not video_id_match:
         return url
     video_id = video_id_match.group(1)
@@ -480,7 +485,13 @@ def extract_video_info():
         if clean_url != url:
             app.logger.debug(f"🧹 Cleaned URL from original: {url}")  # Changed to debug, less critical
 
-        ydl_opts = {"quiet": False, "no_warnings": False, "extract_flat": False, "socket_timeout": 300, **get_ytdlp_base_opts()}
+        ydl_opts = {
+            "quiet": False,
+            "no_warnings": False,
+            "extract_flat": False,
+            "socket_timeout": 300,
+            **get_ytdlp_base_opts(),
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(clean_url, download=False)
 
@@ -1135,7 +1146,10 @@ def _perform_individual_download(task_details):
         if is_mp3_conversion:
             # Get bitrate from selected_format (e.g., 192 or 128)
             mp3_bitrate = str(int(selected_format.get("abr", 192)))
-            app.logger.info(f"🎵 Task {task_id}: MP3 conversion requested at {mp3_bitrate}kbps. Downloading best audio and converting.")
+            app.logger.info(
+                f"🎵 Task {task_id}: MP3 conversion requested at {mp3_bitrate}kbps."
+                " Downloading best audio and converting."
+            )
             ydl_postprocessors.append(
                 {
                     "key": "FFmpegExtractAudio",
@@ -1160,7 +1174,8 @@ def _perform_individual_download(task_details):
                 ydl_opts["postprocessor_hooks"] = [lambda d: _mp3_postprocessor_hook(task_id, d)]
 
         app.logger.info(
-            f"⏬ Task {task_id}: Downloading fmt {ydl_format}. URL: {video_url}, Target: {on_disk_filepath_final_target}"
+            f"⏬ Task {task_id}: Downloading fmt {ydl_format}."
+            f" URL: {video_url}, Target: {on_disk_filepath_final_target}"
         )
         # app.logger.debug(f"Task {task_id}: yt-dlp options: {ydl_opts}") # Removed for brevity
 
@@ -1640,7 +1655,7 @@ worker_thread.start()
 print("Background task worker started.", flush=True)
 
 # Record application start time for health checks
-app.start_time = time.time()
+app.config["START_TIME"] = time.time()
 
 # Start the cleanup scheduler
 print("Starting automatic file cleanup scheduler...", flush=True)
