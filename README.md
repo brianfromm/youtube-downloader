@@ -6,23 +6,16 @@ This project started from a need to occasionally download videos without relying
 
 ## Features
 
-- **Video Analysis:** View video title, duration, uploader, view count, and upload date.
-- **List Available Formats:** Displays all available video and audio streams, categorized by type (Video+Audio, Video-Only, Audio-Only).
-- **Queued Downloads:** Initiate downloads for pre-muxed video/audio, video-only, or audio-only streams. Processing occurs in the background, and the download starts automatically when ready.
-- **High-Quality Combined Downloads:** Select a video-only stream and the best audio to be combined into a high-quality MP4. This task is processed in the background, and the download starts automatically upon completion.
-- **Real-Time Progress Tracking:** Visual progress bars with phase indicators (Video → Audio → Combining) for combination tasks, and streamlined single-bar progress for direct downloads.
-- **Cancellable Downloads:** Cancel both queued and in-progress downloads at any time with a custom confirmation modal. Cancelled tasks automatically reset after 3 seconds for easy retry.
-- **Error Handling:** Failed downloads display error messages and automatically reset after 5 seconds for easy retry.
-- **URL Compatibility:** Supports standard `youtube.com/watch?v=` URLs, shortened `youtu.be/` links, and `youtube.com/live/`, `/shorts/`, `/embed/`, `/v/`, and `m.youtube.com` URLs.
-- **User-Friendly Web Interface:** Simple and intuitive interface to paste a URL and access download options.
-- **Video Thumbnail Preview:** Displays a thumbnail of the YouTube video.
-- **Mobile-Responsive Design:** Fully optimized UI for mobile devices with touch-friendly controls and adaptive layouts.
-- **Asynchronous Task Processing:** Downloads and combinations are handled by a background task queue, allowing for a non-blocking user experience.
-- **Automatic File Cleanup:** Automatically removes processed files older than 7 days to manage disk space.
-- **Descriptive File Storage:** Processed files are stored with readable names including video title and quality information.
-- **Automated Dependency Updates:** GitHub Actions workflow automatically rebuilds with latest yt-dlp and FFmpeg weekly.
-- **Docker Support:** Includes `Dockerfile` and `docker-compose.yml` for easy setup and deployment in a containerized environment.
-- **SABR Streaming Support:** Handles videos with YouTube's SABR (Stream-Based Adaptive Bitrate) restrictions via PO token generation.
+- **Video Analysis:** View title, duration, uploader, view count, and upload date with thumbnail preview.
+- **Format Selection:** Browse all available streams categorized by type (Video+Audio, Video-Only, Audio-Only).
+- **High-Quality Combined Downloads:** Select a video-only stream and the best audio to be combined into a single MP4.
+- **Real-Time Progress:** Visual progress bars with phase indicators (Video → Audio → Combining) and cancellable at any time.
+- **URL Compatibility:** Supports `youtube.com/watch?v=`, `youtu.be/`, `/live/`, `/shorts/`, `/embed/`, `/v/`, and `m.youtube.com` URLs.
+- **Mobile-Responsive UI:** Fully optimized for mobile devices with touch-friendly controls.
+- **Background Processing:** Async task queue with automatic file cleanup (7 days) and descriptive filenames.
+- **Automated Updates:** Weekly GitHub Actions rebuilds with latest yt-dlp and FFmpeg.
+- **SABR Streaming Support:** Handles YouTube's SABR restrictions via PO token generation.
+- **Docker Support:** Includes `Dockerfile` and `docker-compose.yml` for containerized deployment.
 
 ## Tech Stack
 
@@ -40,7 +33,7 @@ A brief overview of the key files and directories:
 - `templates/`: Contains HTML templates.
   - `youtube-downloader.html`: The main HTML file for the web interface.
 - `.github/workflows/`: GitHub Actions automation.
-  - `rebuild-dependencies.yml`: Weekly dependency update workflow.
+  - `docker-build.yml`: Automated builds and weekly dependency updates.
 - `static/`: Contains static assets.
   - `css/styles.css`: CSS stylesheets.
   - `js/script.js`: JavaScript code.
@@ -52,7 +45,7 @@ A brief overview of the key files and directories:
 
 ## Prerequisites
 
-### For Local Development:
+### For Local Development
 
 - Python 3.12+
 - `pip` (Python package installer)
@@ -62,7 +55,7 @@ A brief overview of the key files and directories:
   - **Windows:** Download from [FFmpeg website](https://ffmpeg.org/download.html) and add to PATH.
 - Git (for cloning the repository)
 
-### For Docker Deployment:
+### For Docker Deployment
 
 - Docker Desktop or Docker Engine/CLI.
 
@@ -75,78 +68,23 @@ This project uses environment variables to manage Docker configurations for diff
 
 Available environment variables:
 
-- **`COMPOSE_IMAGE`**:
-
-  - **Purpose:** Specifies the Docker image name and tag to use.
-  - **Local Development (in `.env.local`):** Set to a local-specific tag, e.g., `COMPOSE_IMAGE=youtube-downloader-local:latest`. When you run `docker-compose build`, the locally built image will be tagged with this name.
-  - **Production (in `.env` on server):** Set to your pre-built production image URL, e.g., `COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest`. This allows Watchtower (or manual pulls) to use the correct production image.
-  - **Default (if not set):** Defaults to `youtube-downloader-default:latest` in `docker-compose.yml`, intended for local builds if no specific `COMPOSE_IMAGE` is provided.
-
-- **`COMPOSE_PLATFORM`**:
-
-  - **Purpose:** Specifies the target platform for Docker image builds (e.g., `linux/amd64`, `linux/arm64/v8`).
-  - **Usage (typically in `.env.local` for cross-compilation or specific architecture builds):** For Apple Silicon Macs building for a Linux ARM target, you might set `COMPOSE_PLATFORM=linux/arm64/v8`. For building for a standard AMD64/x86-64 Linux target, set `COMPOSE_PLATFORM=linux/amd64`.
-  - **Default (if not set):** Defaults to `linux/amd64` in `docker-compose.yml`.
-
-- **`COMPOSE_BAKE`**:
-
-  - **Purpose:** Tells Docker Compose to use `docker buildx bake` for building images, which can offer performance improvements and access to advanced BuildKit features.
-  - **Usage:** Set to `true` (e.g., `COMPOSE_BAKE=true` in `.env.local` or `.env`) to enable.
-  - **Default (if not set):** Docker Compose uses its standard build process. Enabling is generally recommended for potentially faster and more efficient builds.
-
-- **`USE_DEV_SERVER`**:
-
-  - **Purpose:** Controls whether the Flask development server or a production server (Gunicorn) is used inside the container. When `true`, `FLASK_ENV` is also set to `development` within `start.sh`.
-  - **Usage:** Set to `true` (e.g., `USE_DEV_SERVER=true` in `.env.local`) to use the Flask development server (useful for debugging). Set to `false` (e.g., `USE_DEV_SERVER=false` in `.env` on server) to use Gunicorn for production.
-  - **Default (if not set):** Defaults to `false` in `docker-compose.yml`, meaning Gunicorn will be used.
-
-- **`GUNICORN_WORKERS`**:
-
-  - **Purpose:** Sets the number of Gunicorn worker processes when `USE_DEV_SERVER` is `false`.
-  - **Usage:** E.g., `GUNICORN_WORKERS=1`.
-  - **IMPORTANT NOTE:** Due to the current in-memory task queue implementation, **this value MUST be set to `1` (or left unset to use the default of `1`)**. Using more than one worker will lead to inconsistent behavior as each worker would have its own separate task queue and status.
-  - **Default (if not set):** Defaults to `1` in `start.sh`.
-
-- **`GUNICORN_THREADS`**:
-
-  - **Purpose:** Sets the number of threads per Gunicorn worker process when `USE_DEV_SERVER` is `false`. This allows a single worker to handle multiple requests concurrently, especially useful for I/O-bound operations.
-  - **Usage:** E.g., `GUNICORN_THREADS=4`.
-  - **Default (if not set):** Defaults to `4` in `start.sh`.
-
-- **`GUNICORN_TIMEOUT`**:
-
-  - **Purpose:** Sets the timeout in seconds for Gunicorn workers when `USE_DEV_SERVER` is `false`. Set to `0` for unlimited timeout, which is recommended for video downloads.
-  - **Usage:** E.g., `GUNICORN_TIMEOUT=600` (for 10 minutes) or `GUNICORN_TIMEOUT=0` (for no timeout).
-  - **Default (if not set):** Defaults to `0` (unlimited) in `start.sh`.
-  - **Note:** While Gunicorn timeout is unlimited, yt-dlp uses a `socket_timeout` of 300 seconds to detect and abort stalled network connections, preventing tasks from hanging indefinitely.
-
-- **`GUNICORN_LOGLEVEL`**:
-
-  - **Purpose:** Sets the log level for Gunicorn when `USE_DEV_SERVER` is `false`.
-  - **Usage:** E.g., `GUNICORN_LOGLEVEL=info`. Common values: `debug`, `info`, `warning`, `error`.
-  - **Default (if not set):** Defaults to `info` in `start.sh`.
-
-- **`FORWARDED_ALLOW_IPS`**:
-
-  - **Purpose:** Specifies trusted proxy IPs/networks for `X-Forwarded-*` headers when running behind a reverse proxy (e.g., Nginx Proxy Manager, Traefik). This enables proper client IP logging instead of seeing the proxy's IP.
-  - **Usage:** E.g., `FORWARDED_ALLOW_IPS=172.19.0.0/16` for a Docker network, or `FORWARDED_ALLOW_IPS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16` for all private networks.
-  - **Default (if not set):** Defaults to `127.0.0.1` in `start.sh` (only trusts localhost, safe for direct exposure).
-  - **Note:** CIDR notation support requires Gunicorn 24.1+.
-
-- **`APP_PORT`**:
-
-  - **Purpose:** Defines the port number that the application (Flask/Gunicorn) listens on _inside_ the Docker container.
-  - **Usage:** E.g., `APP_PORT=8080`.
-  - **Default (if not set):** Defaults to `8080` (used in `start.sh` and as a `Dockerfile` ARG).
-
-- **`HOST_PORT`**:
-  - **Purpose:** Defines the port number on the _host machine_ that maps to the `APP_PORT` inside the container (defined in `docker-compose.yml`).
-  - **Usage:** E.g., `HOST_PORT=8000` (would map port 8000 on host to `APP_PORT` in container).
-  - **Default (if not set):** Defaults to the value of `APP_PORT` in `docker-compose.yml` (so if `APP_PORT` is 8080 and `HOST_PORT` is not set, the mapping will be `8080:8080`).
+| Variable              | Default                             | Description                                                                                  |
+| --------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| `COMPOSE_IMAGE`       | `youtube-downloader-default:latest` | Docker image name/tag. Set to `ghcr.io/brianfromm/youtube-downloader:latest` for production. |
+| `COMPOSE_PLATFORM`    | `linux/amd64`                       | Target platform for builds (e.g., `linux/arm64/v8` for Apple Silicon).                       |
+| `COMPOSE_BAKE`        | _(disabled)_                        | Set `true` to use `docker buildx bake` for faster builds.                                    |
+| `USE_DEV_SERVER`      | `false`                             | Set `true` for Flask dev server; `false` for Gunicorn.                                       |
+| `GUNICORN_WORKERS`    | `1`                                 | Worker processes. **Must be 1** due to in-memory task queue.                                 |
+| `GUNICORN_THREADS`    | `4`                                 | Threads per worker for concurrent request handling.                                          |
+| `GUNICORN_TIMEOUT`    | `0` (unlimited)                     | Worker timeout in seconds. `0` recommended for video downloads.                              |
+| `GUNICORN_LOGLEVEL`   | `info`                              | Log level: `debug`, `info`, `warning`, `error`.                                              |
+| `FORWARDED_ALLOW_IPS` | `127.0.0.1`                         | Trusted proxy IPs/CIDRs for `X-Forwarded-*` headers (e.g., `172.19.0.0/16`).                 |
+| `APP_PORT`            | `8080`                              | Port the app listens on inside the container.                                                |
+| `HOST_PORT`           | _(same as APP_PORT)_                | Port on the host machine mapped to `APP_PORT`.                                               |
 
 **Example `.env.local` for an Apple Silicon Mac developer:**
 
-```
+```bash
 COMPOSE_IMAGE=youtube-downloader-local:latest
 COMPOSE_PLATFORM=linux/arm64/v8 # Or linux/amd64 if building for that target
 COMPOSE_BAKE=true # Enable Docker Buildx Bake for building
@@ -162,7 +100,7 @@ USE_DEV_SERVER=true
 
 **Example `.env` for a production Synology NAS (amd64):**
 
-```
+```bash
 COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest
 USE_DEV_SERVER=false
 GUNICORN_WORKERS=1 # IMPORTANT: Must be 1 due to in-memory task queue
@@ -179,132 +117,112 @@ HOST_PORT=8080 # Standard host mapping for this service
 
 ### 1. Local Development
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
 
-    ```bash
-    git clone https://github.com/brianfromm/youtube-downloader.git
-    cd youtube-downloader
-    ```
+   ```bash
+   git clone https://github.com/brianfromm/youtube-downloader.git
+   cd youtube-downloader
+   ```
 
-2.  **Create and activate a virtual environment (recommended):**
+2. **Create and activate a virtual environment (recommended):**
 
-    ```bash
-    python3.12 -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-    ```
+   ```bash
+   python3.12 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-3.  **Install Python dependencies:**
+3. **Install Python dependencies:**
 
-    ```bash
-    pip install -r requirements.txt
+   ```bash
+   pip install -r requirements.txt
 
-    # Optional: Install development tools (linting, formatting)
-    pip install -r requirements-dev.txt
-    ```
+   # Optional: Install development tools (linting, formatting)
+   pip install -r requirements-dev.txt
+   ```
 
-4.  **Ensure FFmpeg is installed and in your PATH.**
-    Verify by typing `ffmpeg -version` in your terminal.
+4. **Ensure FFmpeg is installed and in your PATH.**
+   Verify by typing `ffmpeg -version` in your terminal.
 
-5.  **Run the server:**
+5. **Start the bgutil PO token server (recommended):**
 
-    ```bash
-    # Option 1: Flask development server (quick restart, may timeout on long downloads)
-    python server.py
+   Without this server, most videos will only show a single download format. With it running, all DASH formats (multiple resolutions, audio qualities, MP3) become available.
 
-    # Option 2: Gunicorn (production server, no timeouts, recommended for testing downloads)
-    ./start.sh
-    ```
+   ```bash
+   # One-time setup
+   cd /tmp
+   git clone https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git bgutil-server
+   cd bgutil-server/server
+   npm install && npx tsc
 
-    **Note:** Flask dev server may timeout on downloads longer than 3-5 minutes. For testing large files, use Gunicorn (`./start.sh`).
+   # Start the server (run in a separate terminal)
+   node /tmp/bgutil-server/server/build/main.js
+   ```
 
-6.  **Optional: Run the bgutil PO token server (for high-quality downloads):**
+   The server runs on `http://127.0.0.1:4416`. The app gracefully degrades if it's not available.
 
-    Some YouTube videos require PO tokens to access higher quality DASH formats (720p+). Without this server, only lower quality combined formats (e.g., 360p) may be available.
+6. **Run the app (in another terminal):**
 
-    ```bash
-    # One-time setup
-    cd /tmp
-    git clone https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git bgutil-server
-    cd bgutil-server/server
-    npm install && npx tsc
+   ```bash
+   cd youtube-downloader
+   source venv/bin/activate
+   ./start.sh          # Gunicorn (recommended, no timeouts)
+   # or: python server.py  # Flask dev server (fast restart, may timeout on long downloads)
+   ```
 
-    # Start the server (run in a separate terminal)
-    node /tmp/bgutil-server/server/build/main.js
-    ```
-
-    The server runs on `http://127.0.0.1:4416`. The app gracefully degrades if it's not available.
-
-6.  Open your web browser and navigate to `http://localhost:8080` or `http://0.0.0.0:8080`.
+7. Open your web browser and navigate to `http://localhost:8080`.
 
 ### 2. Using Docker
 
-1.  **Clone the repository (if not already done):**
+1. **Clone the repository (if not already done):**
 
-    ```bash
-    git clone https://github.com/brianfromm/youtube-downloader.git
-    cd youtube-downloader
-    ```
+   ```bash
+   git clone https://github.com/brianfromm/youtube-downloader.git
+   cd youtube-downloader
+   ```
 
-2.  **Using `docker-compose` (recommended for Docker):**
-    This will build the image and run the container, including the bgutil service for PO token support.
+2. **Using `docker-compose` (recommended for Docker):**
+   This will build the image and run the container, including the bgutil service for PO token support.
 
-    ```bash
-    docker-compose up --build
-    ```
+   ```bash
+   docker-compose up --build
+   ```
 
-    To run in detached mode:
+   To run in detached mode:
 
-    ```bash
-    docker-compose up --build -d
-    ```
+   ```bash
+   docker-compose up --build -d
+   ```
 
-    **Note:** The bgutil service starts automatically and enables downloads from videos with SABR streaming restrictions.
+   **Note:** The bgutil service starts automatically and enables downloads from videos with SABR streaming restrictions.
 
-3.  **Alternatively, build and run manually:**
+3. **Alternatively, build and run manually:**
+   - **Build the Docker image:**
 
-    - **Build the Docker image:**
-      ```bash
-      docker build -t youtube-downloader .
-      ```
-    - **Run the Docker container:**
-      ```bash
-      docker run -p 8080:8080 youtube-downloader
-      ```
+     ```bash
+     docker build -t youtube-downloader .
+     ```
 
-4.  Open your web browser and navigate to `http://localhost:8080`.
+   - **Run the Docker container:**
+
+     ```bash
+     docker run -p 8080:8080 youtube-downloader
+     ```
+
+4. Open your web browser and navigate to `http://localhost:8080`.
 
 ## How to Use
 
-1.  Open the web application in your browser.
-2.  Paste a YouTube video URL (e.g., `https://www.youtube.com/watch?v=dQw4w9WgXcQ`, `https://youtu.be/dQw4w9WgXcQ`, or `https://www.youtube.com/live/dQw4w9WgXcQ`) into the input field.
-3.  Click "Analyze Video".
-4.  The application will display video details and a list of available download formats.
-    - **High Quality Combined:** Choose a video resolution to combine with the best audio. The button will show processing status with a multi-phase progress bar (Video → Audio → Combining), and the download will start automatically once the file is ready.
-    - **Video + Audio (Direct Download):** Direct download for formats that already include audio, with a streamlined single progress bar.
-    - **Video Only / Audio Only:** Direct download for specific video or audio streams with single progress bar.
-5.  Click the "Download" or "Combine & Download" button for your desired format. The button will immediately change to "Cancel" and show a progress section indicating the current status (Queued, Downloading, Processing, etc.) with real-time progress tracking.
-6.  **Cancel anytime:** Click the "Cancel" button to stop a queued or in-progress download. A confirmation dialog will appear to confirm your choice. Cancelled tasks automatically reset after 3 seconds, allowing you to try again.
-7.  **Automatic retry:** If a download fails, the error message will display for 5 seconds before automatically resetting the button for easy retry.
-8.  Once server-side processing is complete, the file download will begin automatically in your browser.
-
-## Automated Maintenance
-
-The application includes several automated features for minimal-maintenance operation:
-
-### **Dependency Updates**
-
-The project automatically rebuilds every Sunday at 3am Mountain Time to ensure you're always running the latest versions of critical dependencies (yt-dlp and FFmpeg). This is essential because YouTube frequently changes their platform, and yt-dlp updates are released regularly to adapt to these changes.
-
-- **Weekly rebuilds**: GitHub Actions automatically rebuilds the Docker image with the latest yt-dlp and FFmpeg versions every Sunday
-- **Always up-to-date**: Ensures the tool continues working even when YouTube makes breaking changes, without requiring manual intervention
-- **Manual triggers**: Updates can also be triggered manually via GitHub Actions for urgent fixes
-- **Watchtower integration**: If using Watchtower for container management, your deployment will automatically pull and run the latest image each week
-
-### **File Management**
-
-- **Automatic cleanup**: Processed files are automatically removed after 7 days to prevent disk space issues
-- **Descriptive naming**: Files are stored with readable names like `"Video Title (1080p) [uuid8].mp4"` for easy identification
-- **Background processing**: All cleanup happens automatically without interrupting downloads
+1. Open the web application in your browser.
+2. Paste a YouTube video URL (e.g., `https://www.youtube.com/watch?v=dQw4w9WgXcQ`, `https://youtu.be/dQw4w9WgXcQ`, or `https://www.youtube.com/live/dQw4w9WgXcQ`) into the input field.
+3. Click "Analyze Video".
+4. The application will display video details and a list of available download formats.
+   - **High Quality Combined:** Choose a video resolution to combine with the best audio. The button will show processing status with a multi-phase progress bar (Video → Audio → Combining), and the download will start automatically once the file is ready.
+   - **Video + Audio (Direct Download):** Direct download for formats that already include audio, with a streamlined single progress bar.
+   - **Video Only / Audio Only:** Direct download for specific video or audio streams with single progress bar.
+5. Click the "Download" or "Combine & Download" button for your desired format. The button will immediately change to "Cancel" and show a progress section indicating the current status (Queued, Downloading, Processing, etc.) with real-time progress tracking.
+6. **Cancel anytime:** Click the "Cancel" button to stop a queued or in-progress download. A confirmation dialog will appear to confirm your choice. Cancelled tasks automatically reset after 3 seconds, allowing you to try again.
+7. **Automatic retry:** If a download fails, the error message will display for 5 seconds before automatically resetting the button for easy retry.
+8. Once server-side processing is complete, the file download will begin automatically in your browser.
 
 ## Disclaimer
 

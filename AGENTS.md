@@ -1,4 +1,4 @@
-# YouTube Downloader - Claude Code Reference
+# YouTube Downloader - Codex Reference
 
 ## Project Overview
 

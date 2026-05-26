@@ -39,6 +39,11 @@ services:
       - USE_DEV_SERVER=${USE_DEV_SERVER:-false}
       - APP_PORT=${APP_PORT:-8080}
       - BGUTIL_BASE_URL=http://bgutil:4416
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-1}
+      - GUNICORN_THREADS=${GUNICORN_THREADS:-4}
+      - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-0}
+      - GUNICORN_LOGLEVEL=${GUNICORN_LOGLEVEL:-info}
+      - FORWARDED_ALLOW_IPS=${FORWARDED_ALLOW_IPS:-127.0.0.1}
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
