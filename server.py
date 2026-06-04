@@ -1673,7 +1673,12 @@ if __name__ == "__main__":
         )
         # debug=True enables auto-reloader and debugger. Flask's reloader handles threads better.
         # threaded=True is generally good for dev server to handle multiple requests like polling.
-        app.run(host="0.0.0.0", port=flask_port_info, debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true", threaded=True)
+        app.run(
+            host="0.0.0.0",
+            port=flask_port_info,
+            debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true",
+            threaded=True,
+        )
     else:
         # When using Gunicorn, it will run the 'app' object directly.
         # The host and port will be configured via Gunicorn's command line arguments.
