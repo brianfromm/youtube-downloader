@@ -2,13 +2,13 @@
 # Install with: pip install -r requirements-dev.txt
 
 # Modern fast linter (replaces flake8, isort, and more)
-ruff>=0.15.15
+ruff>=0.15.17
 
 # Code formatter
 black>=26.5.1
 
 # Traditional comprehensive linter (optional, for detailed analysis)
-pylint>=4.0.5
+pylint>=4.0.6
 
 # Type checking (optional)
 mypy>=2.1.0
