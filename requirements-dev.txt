@@ -8,7 +8,7 @@ ruff>=0.15.20
 black>=26.5.1
 
 # Traditional comprehensive linter (optional, for detailed analysis)
-pylint>=4.0.6
+pylint>=4.0.7
 
 # Type checking (optional)
 mypy>=2.1.0
