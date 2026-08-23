@@ -1,14 +1,8 @@
-[tool.black]
-line-length = 120
-target-version = ["py312"]
-
 [tool.ruff]
 line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
-extend-ignore = ["E203"]
-# Optional: include fixes for common plugins (many of which Ruff bundles)
 select = [
     "E",    # pycodestyle errors
     "F",    # pyflakes
@@ -17,6 +11,13 @@ select = [
     "B",    # flake8-bugbear
     "SIM",  # flake8-simplify
     "C4",   # flake8-comprehensions
+    "S",    # flake8-bandit (security)
+    "A",    # flake8-builtins
+    "ARG",  # flake8-unused-arguments
+    "N",    # pep8-naming
+    "DTZ",  # flake8-datetimez
+    "ISC",  # flake8-implicit-str-concat
+    "LOG",  # flake8-logging
     "RUF"   # Ruff-specific rules
 ]
 
