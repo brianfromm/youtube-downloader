@@ -464,8 +464,9 @@ def clean_youtube_url(url):
             t_match = re.search(r"[&?]t=([^&]+)", url)
             if t_match:
                 timestamp = t_match.group(1)
-    except Exception:  # Catch all exceptions during timestamp parsing
-        pass
+    except Exception as e:
+        # Timestamp is optional; a parse failure just means the URL has none
+        app.logger.debug(f"Timestamp parsing failed for {url}: {e}")
     clean_url = f"https://www.youtube.com/watch?v={video_id}"
     if timestamp:
         clean_url += f"&t={timestamp}"
@@ -510,7 +511,7 @@ def extract_video_info():
             title_for_log = video_data["title"]
             if len(title_for_log) > 50:
                 title_for_log = title_for_log[:47] + "..."
-            app.logger.info(f"📝 Processing: \"{title_for_log}\" by {video_data['uploader']}")
+            app.logger.info(f'📝 Processing: "{title_for_log}" by {video_data["uploader"]}')
             for fmt in info.get("formats", []):
                 if fmt.get("url"):
                     format_entry = {
@@ -576,7 +577,7 @@ def extract_video_info():
                     # Handle filesize display
                     filesize_bytes = fmt.get("filesize") or fmt.get("filesize_approx")
                     if filesize_bytes:
-                        format_entry["filesize"] = f"{filesize_bytes / (1024*1024):.1f} MB"
+                        format_entry["filesize"] = f"{filesize_bytes / (1024 * 1024):.1f} MB"
                     else:
                         format_entry["filesize"] = "N/A"  # Use N/A for unknown or zero size
                     video_data["formats"].append(format_entry)
@@ -656,7 +657,7 @@ def extract_video_info():
             title_for_log = video_data.get("title", "Unknown Title")
             if len(title_for_log) > 40:
                 title_for_log = title_for_log[:37] + "..."
-            app.logger.info(f"✅ Extracted {len(video_data['formats'])} formats for \"{title_for_log}\"")
+            app.logger.info(f'✅ Extracted {len(video_data["formats"])} formats for "{title_for_log}"')
             return jsonify(video_data)
 
     except Exception as e:
@@ -764,7 +765,8 @@ def _manual_combine_for_worker(
         # app.logger.info(f"Task {task_id}: Executing FFmpeg command: {' '.join(ffmpeg_cmd)}") # Removed for brevity
 
         # Execute FFmpeg with real-time progress parsing
-        process = subprocess.Popen(
+        # Fixed argument list, no shell=True, paths are app-generated UUIDs
+        process = subprocess.Popen(  # noqa: S603
             ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, bufsize=1
         )
 
@@ -1674,7 +1676,8 @@ if __name__ == "__main__":
         # debug=True enables auto-reloader and debugger. Flask's reloader handles threads better.
         # threaded=True is generally good for dev server to handle multiple requests like polling.
         app.run(
-            host="0.0.0.0",
+            # Dev server only; binding all interfaces is intentional for container/LAN access
+            host="0.0.0.0",  # noqa: S104
             port=flask_port_info,
             debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true",
             threaded=True,
