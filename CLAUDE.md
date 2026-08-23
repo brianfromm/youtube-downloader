@@ -16,14 +16,14 @@ python3.12 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Optional: Install dev tools (linting, formatting)
+# Optional: Install dev tools (ruff, pylint, mypy)
 pip install -r requirements-dev.txt
 
 # Run locally (always activate venv first)
 source venv/bin/activate
 
 # Terminal 1: Start bgutil PO token server (required for all DASH formats)
-node /tmp/bgutil-server/server/build/main.js
+node ~/.local/share/bgutil-server/server/build/main.js
 
 # Terminal 2: Start the app
 ./start.sh          # Gunicorn (recommended, no timeouts)
@@ -48,8 +48,26 @@ docker-compose up -d --remove-orphans
 docker-compose logs -f
 ```
 
+### Linting and Formatting
+
+Ruff handles both linting and formatting.
+
+```bash
+source venv/bin/activate
+
+ruff check .            # Lint
+ruff check . --fix      # Lint and autofix
+ruff format .           # Format
+ruff format --check .   # Verify formatting (what CI runs)
+```
+
+**Note:** Ruff formats Python code blocks inside Markdown files as well as `.py`
+files, so `docs/*.md`, `README.md`, and `CLAUDE.md` are all covered. Config lives
+in `pyproject.toml` under `[tool.ruff]`; `venv/` is excluded by default.
+
 ### GitHub Actions
 
+- **Lint and format**: Runs `ruff check` and `ruff format --check` on every push and PR to main
 - **Weekly rebuilds**: Every Sunday 3am MT (fast 60s builds)
 - **Manual trigger**: Actions → "Build and Push Docker Image"
 - **Auto-build**: On every push to main
@@ -59,6 +77,7 @@ docker-compose logs -f
 
 - `server.py` - Main Flask application with task queue
 - `.github/workflows/docker-build.yml` - Automated builds and dependency updates
+- `.github/workflows/lint.yml` - Ruff lint and format checks on push/PR
 - `processed_files/` - Auto-cleaned after 7 days, descriptive names like "Title (1080p) [uuid8].mp4"
 
 ## Environment Variables
@@ -92,13 +111,20 @@ The bgutil service runs as a separate container and is required for downloading 
 ### bgutil Server Setup (One-Time)
 
 ```bash
-cd /tmp
+mkdir -p ~/.local/share
+cd ~/.local/share
 git clone https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git bgutil-server
 cd bgutil-server/server
 npm install && npx tsc
 ```
 
-The server runs on <http://127.0.0.1:4416>. The app gracefully degrades if unavailable.
+The server runs on <http://127.0.0.1:4416>. The app gracefully degrades if unavailable —
+but degraded means most videos expose only a single low-res format, so start it first.
+
+**Do not install this under `/tmp`.** macOS purges `/tmp`, so the build silently disappears
+and DASH formats stop appearing with no obvious cause. `~/.local/share` persists.
+
+Verify it is up: `curl -s http://127.0.0.1:4416/ping`
 
 ## Commit Patterns (Semantic Release)
 
