@@ -71,8 +71,8 @@ against its upstream support schedule, not just "is there a newer one".
 2c. **Docker and runtime versions.** Check the `FROM` base image in `Dockerfile`
    against current upstream tags, and check each `python-version` / `node-version`
    against its support schedule (e.g. `https://raw.githubusercontent.com/nodejs/Release/main/schedule.json`).
-   CI runtimes should match what production actually runs — if the Dockerfile ships
-   3.14, CI testing 3.12 is validating a configuration nobody deploys.
+   CI runtimes should match what production actually runs — a CI version that differs
+   from what the Dockerfile ships is validating a configuration nobody deploys.
 
    For Python bumps, confirm wheels exist for the target version before switching;
    a missing wheel means a slow source build or an outright failure:

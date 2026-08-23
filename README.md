@@ -19,7 +19,7 @@ This project started from a need to occasionally download videos without relying
 
 ## Tech Stack
 
-- **Backend:** Python 3.12+, Flask
+- **Backend:** Python 3.14+, Flask
 - **Video Processing:** `yt-dlp`, FFmpeg
 - **PO Token Support:** `bgutil-ytdlp-pot-provider` (for SABR streaming workaround)
 - **Frontend:** HTML, CSS (vanilla), JavaScript (vanilla)
@@ -47,7 +47,7 @@ A brief overview of the key files and directories:
 
 ### For Local Development
 
-- Python 3.12+
+- Python 3.14+
 - `pip` (Python package installer)
 - FFmpeg: Must be installed and accessible in your system's PATH. This is crucial for the video/audio combination feature.
   - **macOS:** `brew install ffmpeg`
@@ -127,7 +127,7 @@ HOST_PORT=8080 # Standard host mapping for this service
 2. **Create and activate a virtual environment (recommended):**
 
    ```bash
-   python3.12 -m venv venv
+   python3.14 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
