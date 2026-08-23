@@ -2,7 +2,11 @@ services:
   # bgutil service provides PO (Proof of Origin) tokens for SABR streaming workaround
   # Required for downloading DASH formats from certain YouTube videos
   bgutil:
-    image: brainicism/bgutil-ytdlp-pot-provider
+    # Track the latest release: bgutil chases YouTube's anti-bot changes, so a
+    # stale token server stops returning DASH formats. The pip plugin in
+    # requirements.txt floats on >= for the same reason, keeping the pair aligned.
+    # The node variant is explicit because the healthcheck below shells out to node.
+    image: brainicism/bgutil-ytdlp-pot-provider:node
     container_name: bgutil-pot-provider
     restart: unless-stopped
     healthcheck:

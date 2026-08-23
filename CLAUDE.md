@@ -4,7 +4,7 @@
 
 Web-based YouTube video analyzer and downloader built with Flask, yt-dlp, and FFmpeg. Features automated dependency updates and file cleanup for minimal maintenance.
 
-**Requirements:** Python 3.12+, FFmpeg
+**Requirements:** Python 3.14+, FFmpeg
 
 ## Key Commands
 
@@ -12,7 +12,7 @@ Web-based YouTube video analyzer and downloader built with Flask, yt-dlp, and FF
 
 ```bash
 # Setup (one-time)
-python3.12 -m venv venv
+python3.14 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 

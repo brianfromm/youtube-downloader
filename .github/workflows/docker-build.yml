@@ -36,7 +36,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
           cache: "pip"
 
       - name: Install dependencies
@@ -77,6 +77,47 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
+
+      # Build locally first so a broken image is never pushed. The registry push
+      # below reuses these layers from the daemon cache, so this is not a second build.
+      - name: Build image for smoke test
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: youtube-downloader:smoke
+          pull: true
+
+      # The weekly rebuild resolves >= floors to whatever is newest, so what ships is
+      # never exactly what was last reviewed. This checks the image actually works.
+      - name: Smoke test the built image
+        run: |
+          set -euo pipefail
+          docker run -d --name smoke -p 8080:8080 -e USE_DEV_SERVER=false youtube-downloader:smoke
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health >/dev/null 2>&1; then break; fi
+            if [ "$i" -eq 30 ]; then
+              echo "::error::app never responded on /health"
+              docker logs smoke
+              exit 1
+            fi
+            sleep 2
+          done
+
+          # A dead worker thread means downloads queue forever without failing
+          curl -fsS http://localhost:8080/health -o health.json
+          python3 -c "import json; d = json.load(open('health.json')); assert d['status'] == 'healthy', d; assert d['worker_alive'] is True, d; print('health OK:', d)"
+
+          # FFmpeg drives every merge and transcode
+          docker exec smoke ffmpeg -version > ffmpeg.txt && head -1 ffmpeg.txt
+          docker exec smoke ffprobe -version > ffprobe.txt && head -1 ffprobe.txt
+
+          # Without the PO token plugin, most videos expose only one low-res format
+          docker exec smoke python -c "import yt_dlp; print('yt-dlp', yt_dlp.version.__version__)"
+          docker exec smoke python -c "import importlib.util as u; assert u.find_spec('yt_dlp_plugins.extractor.getpot_bgutil_http'), 'bgutil PO token plugin missing'; print('bgutil PO token plugin present')"
+
+          docker rm -f smoke
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7

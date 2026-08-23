@@ -26,14 +26,21 @@ RUN \
     exit 1; \
     fi && \
     FFMPEG_DOWNLOAD_URL="https://github.com/yt-dlp/FFmpeg-Builds/releases/download/${FFMPEG_VERSION_TAG}/${FFMPEG_FILENAME}" && \
+    CHECKSUMS_URL="https://github.com/yt-dlp/FFmpeg-Builds/releases/download/${FFMPEG_VERSION_TAG}/checksums.sha256" && \
     echo "Downloading FFmpeg from ${FFMPEG_DOWNLOAD_URL}" && \
-    curl -Lo /tmp/ffmpeg.tar.xz "${FFMPEG_DOWNLOAD_URL}" && \
+    curl -Lo "/tmp/${FFMPEG_FILENAME}" "${FFMPEG_DOWNLOAD_URL}" && \
+    # Verify against the checksums published alongside the same release. The tag is
+    # rolling, so this catches a corrupted or truncated transfer, not a bad upstream.
+    curl -Lo /tmp/checksums.sha256 "${CHECKSUMS_URL}" && \
+    awk -v f="${FFMPEG_FILENAME}" '$2 == f' /tmp/checksums.sha256 > /tmp/ffmpeg.expected.sha256 && \
+    test -s /tmp/ffmpeg.expected.sha256 && \
+    (cd /tmp && sha256sum -c ffmpeg.expected.sha256) && \
     mkdir -p /tmp/ffmpeg_extracted && \
-    tar -xf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg_extracted --strip-components=1 && \
+    tar -xf "/tmp/${FFMPEG_FILENAME}" -C /tmp/ffmpeg_extracted --strip-components=1 && \
     cp /tmp/ffmpeg_extracted/bin/ffmpeg /usr/local/bin/ffmpeg && \
     cp /tmp/ffmpeg_extracted/bin/ffprobe /usr/local/bin/ffprobe && \
     chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe && \
-    rm -rf /tmp/ffmpeg.tar.xz /tmp/ffmpeg_extracted && \
+    rm -rf "/tmp/${FFMPEG_FILENAME}" /tmp/ffmpeg_extracted /tmp/checksums.sha256 /tmp/ffmpeg.expected.sha256 && \
     # Verify installation and print version
     echo "FFmpeg version:" && ffmpeg -version && \
     echo "ffprobe version:" && ffprobe -version
