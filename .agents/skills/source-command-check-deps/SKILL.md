@@ -69,7 +69,22 @@ against its upstream support schedule, not just "is there a newer one".
    workflow can be left stranded on the old version.
 
 2c. **Docker and runtime versions.** Check the `FROM` base image in `Dockerfile`
-   against current upstream tags, and check each `python-version` / `node-version`
+   and every `image:` in `docker-compose.yml` against current upstream tags. An
+   untagged image silently means `:latest` — flag it, but pinning to a fixed
+   version is not automatically the right fix. Match the tag to what the
+   dependency is:
+
+   - **Build/gate tools** (linters, formatters): pin exactly. A new version
+     changing pass/fail on untouched code is the failure mode to avoid.
+   - **Fast-moving runtime deps** (yt-dlp, bgutil): track the latest. These chase
+     upstream changes, so staleness *is* the outage — a frozen token server stops
+     returning DASH formats. Keep the compose tag and the matching pip requirement
+     on the same policy so the pair cannot drift.
+   - **Always name the variant** when one exists (`node` vs `deno` here). The
+     compose healthcheck shells out to `node`; a default-variant switch upstream
+     would break it silently.
+
+   Also check each `python-version` / `node-version`
    against its support schedule (e.g. `https://raw.githubusercontent.com/nodejs/Release/main/schedule.json`).
    CI runtimes should match what production actually runs — a CI version that differs
    from what the Dockerfile ships is validating a configuration nobody deploys.
