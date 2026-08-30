@@ -79,7 +79,7 @@ Available environment variables:
 | `GUNICORN_THREADS`    | `4`                                 | Threads per worker for concurrent request handling.                                          |
 | `GUNICORN_TIMEOUT`    | `0` (unlimited)                     | Worker timeout in seconds. `0` recommended for video downloads.                              |
 | `GUNICORN_LOGLEVEL`   | `info`                              | Log level: `debug`, `info`, `warning`, `error`.                                              |
-| `FORWARDED_ALLOW_IPS` | `127.0.0.1`                         | Trusted proxy IPs/CIDRs for `X-Forwarded-*` headers (e.g., `172.19.0.0/16`).                 |
+| `FORWARDED_ALLOW_IPS` | `127.0.0.1`                         | Trusted proxy IPs/CIDRs for `X-Forwarded-*` headers. Set to your proxy's network CIDR.       |
 | `APP_PORT`            | `8080`                              | Port the app listens on inside the container.                                                |
 | `HOST_PORT`           | _(same as APP_PORT)_                | Port on the host machine mapped to `APP_PORT`.                                               |
 
@@ -108,7 +108,7 @@ GUNICORN_WORKERS=1 # IMPORTANT: Must be 1 due to in-memory task queue
 GUNICORN_THREADS=4 # Default, can be adjusted based on NAS performance
 GUNICORN_LOGLEVEL=info # Default, can be changed to 'warning' for quieter logs
 GUNICORN_TIMEOUT=0 # Default: 0 = unlimited timeout (recommended for large video files)
-# FORWARDED_ALLOW_IPS=172.19.0.0/16 # Optional: set to your reverse proxy's Docker network CIDR
+# FORWARDED_ALLOW_IPS= # Optional: your reverse proxy's Docker network CIDR (docker network inspect <network>)
 APP_PORT=8080 # Standard internal port
 HOST_PORT=8080 # Standard host mapping for this service
 # COMPOSE_PLATFORM=linux/amd64 # Usually not needed if building on/for amd64, or if image is pre-built for amd64
