@@ -69,6 +69,19 @@ production. `docker-compose.dev.yml` adds `build:` and is local-only.
 - `.github/workflows/docker-build.yml` - Automated builds and dependency updates
 - `processed_files/` - Auto-cleaned after 7 days, descriptive names like "Title (1080p) [uuid8].mp4"
 
+## Repository Hygiene
+
+This repo is public. Keep deployment specifics out of it — that means commit
+messages, PR titles and bodies, and docs, not just code:
+
+- No real IP addresses, hostnames, or network CIDRs
+- No server paths, usernames, or infrastructure names
+- Use a placeholder, or explain how a reader finds their own value
+
+Host-specific values belong in that host's `.env`, which is gitignored and never
+committed. `docker-compose.yml` is deployed as-is and holds only `${VAR}`
+placeholders, so nothing about a deployment needs to enter this repo.
+
 ## Environment Variables
 
 ```env
@@ -76,7 +89,9 @@ production. `docker-compose.dev.yml` adds `build:` and is local-only.
 COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest
 USE_DEV_SERVER=false
 GUNICORN_WORKERS=1  # MUST be 1 due to in-memory queue
-FORWARDED_ALLOW_IPS=127.0.0.1  # Set to proxy IP/CIDR for proper client IP logging (e.g., 172.19.0.0/16)
+# Set to your reverse proxy's network CIDR for correct client IP logging.
+# Find it with: docker network inspect <network> -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+FORWARDED_ALLOW_IPS=127.0.0.1
 ```
 
 ## Architecture Notes
