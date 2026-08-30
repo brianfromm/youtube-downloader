@@ -1,3 +1,10 @@
+# Deployed as-is. Every environment-specific value is a variable with a default,
+# so there is never a reason to hand-edit a copy on a server — set it in that
+# host's .env instead. For local development, layer docker-compose.dev.yml on top
+# to build from source:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
 services:
   # bgutil service provides PO (Proof of Origin) tokens for SABR streaming workaround
   # Required for downloading DASH formats from certain YouTube videos
@@ -16,39 +23,39 @@ services:
       retries: 3
 
   youtube-downloader:
-    # Image configuration:
-    # - For local development: Set COMPOSE_IMAGE in '.env.local' (e.g., COMPOSE_IMAGE=youtube-downloader-local:latest).
-    #   This will build and use a local image with that tag.
-    # - For production (e.g., Synology NAS with Watchtower): Set COMPOSE_IMAGE in an '.env' file on the server
-    #   (or via Container Manager environment settings) to your production image (e.g., COMPOSE_IMAGE=ghcr.io/brianfromm/youtube-downloader:latest).
-    # - If COMPOSE_IMAGE is not set in any .env file, it defaults to 'youtube-downloader-default:latest' for local builds.
-    image: ${COMPOSE_IMAGE:-youtube-downloader-default:latest}
-    build:
-      context: .
-    platform: ${COMPOSE_PLATFORM:-linux/amd64}
+    # Defaults to the published image. docker-compose.dev.yml overrides this to
+    # build from source locally.
+    image: ${COMPOSE_IMAGE:-ghcr.io/brianfromm/youtube-downloader:latest}
     container_name: youtube-downloader
+    restart: unless-stopped
+    # Give an in-flight download time to finish rather than dying mid-merge
+    stop_grace_period: 30s
     depends_on:
       bgutil:
         condition: service_healthy
     ports:
-      # HOST_PORT defaults to APP_PORT if not set in .env file
-      - "${HOST_PORT:-${APP_PORT:-8080}}:${APP_PORT:-8080}"
+      # BIND_ADDRESS restricts the listener to a single host interface.
+      # The default binds all interfaces.
+      - "${BIND_ADDRESS:-0.0.0.0}:${HOST_PORT:-8080}:${APP_PORT:-8080}"
     volumes:
       - /tmp:/tmp
-      # Mount the directory for processed files to the host for easier access/debugging
-      # The server saves files to /app/processed_files inside the container.
-      - ./processed_videos_host:/app/processed_files
+      # The server writes to /app/processed_files inside the container; this
+      # exposes them on the host for access and debugging.
+      - ${PROCESSED_DIR:-./processed_videos_host}:/app/processed_files
     environment:
-      - FLASK_ENV=production
+      - FLASK_ENV=${FLASK_ENV:-production}
       - USE_DEV_SERVER=${USE_DEV_SERVER:-false}
       - APP_PORT=${APP_PORT:-8080}
       - BGUTIL_BASE_URL=http://bgutil:4416
+      # Must stay 1 — the task queue is in-memory and not shared between workers
       - GUNICORN_WORKERS=${GUNICORN_WORKERS:-1}
       - GUNICORN_THREADS=${GUNICORN_THREADS:-4}
+      # 0 means no timeout, so a long download is never killed mid-transfer
       - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-0}
       - GUNICORN_LOGLEVEL=${GUNICORN_LOGLEVEL:-info}
+      # Behind a reverse proxy, set this to the proxy's IP/CIDR — otherwise every
+      # request is logged with the proxy's address instead of the real client's
       - FORWARDED_ALLOW_IPS=${FORWARDED_ALLOW_IPS:-127.0.0.1}
-    restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:

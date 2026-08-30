@@ -37,16 +37,24 @@ node ~/.local/share/bgutil-server/server/build/main.js
 ### Docker Commands
 
 ```bash
-# Build and run
-docker-compose up --build -d
+# Local: build from source (base + dev overlay)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 
-# Update dependencies manually
-docker-compose pull
-docker-compose up -d --remove-orphans
+# Production: run the published image (base file only)
+docker compose up -d
+
+# Update to the latest published image
+docker compose pull
+docker compose up -d --remove-orphans
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
+
+`docker-compose.yml` is deployed as-is — every environment-specific value is a
+variable with a default, set per host in that host's `.env`. Never hand-edit a
+copy on a server; that is how `FORWARDED_ALLOW_IPS` silently stopped reaching
+production. `docker-compose.dev.yml` adds `build:` and is local-only.
 
 ### Linting and Formatting
 
