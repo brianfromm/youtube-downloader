@@ -38,7 +38,8 @@ A brief overview of the key files and directories:
   - `css/styles.css`: CSS stylesheets.
   - `js/script.js`: JavaScript code.
 - `Dockerfile`: For building the Docker image.
-- `docker-compose.yml`: For Docker Compose setup.
+- `docker-compose.yml`: Base Compose file, deployed to servers as-is.
+- `docker-compose.dev.yml`: Local overlay that builds from source.
 - `requirements.txt`: Python dependencies.
 - `start.sh`: Script to start the application (dev or prod server) inside Docker.
 - `processed_files/`: Directory where processed video/audio files are stored with descriptive names (auto-cleaned after 7 days).
@@ -180,18 +181,18 @@ HOST_PORT=8080 # Standard host mapping for this service
    cd youtube-downloader
    ```
 
-2. **Using `docker-compose` (recommended for Docker):**
-   This will build the image and run the container, including the bgutil service for PO token support.
+2. **Using Docker Compose (recommended for Docker):**
+   This builds the image and runs the container, including the bgutil service for PO token support.
 
    ```bash
-   docker-compose up --build
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
    ```
 
-   To run in detached mode:
+   To run in detached mode, add `-d`.
 
-   ```bash
-   docker-compose up --build -d
-   ```
+   `docker-compose.yml` on its own runs the published image and is what gets
+   deployed to a server unchanged; `docker-compose.dev.yml` is the local overlay
+   that builds from source.
 
    **Note:** The bgutil service starts automatically and enables downloads from videos with SABR streaming restrictions.
 

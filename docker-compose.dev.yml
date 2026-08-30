@@ -1,0 +1,15 @@
+# Local development overlay — builds the app from source instead of pulling the
+# published image. Layer it on top of the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Deliberately NOT named docker-compose.override.yml: Compose auto-loads that
+# name, so a stray copy on a server would silently pull `build:` into production
+# and build from source. Requiring the flag makes the failure mode safe — forget
+# it and you simply run the published image.
+services:
+  youtube-downloader:
+    image: ${COMPOSE_IMAGE:-youtube-downloader-local:latest}
+    build:
+      context: .
+    platform: ${COMPOSE_PLATFORM:-linux/amd64}
