@@ -3,7 +3,7 @@
 
 # Linter and formatter
 # Pinned exactly: CI gates on this, so bumps must be deliberate
-ruff==0.16.4
+ruff==0.16.5
 
 # Traditional comprehensive linter (optional, for detailed analysis)
 pylint>=4.0.7
