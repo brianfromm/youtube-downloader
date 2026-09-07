@@ -6,7 +6,7 @@
 ruff==0.16.4
 
 # Traditional comprehensive linter (optional, for detailed analysis)
-pylint>=4.0.7
+pylint>=4.0.8
 
 # Type checking (optional)
 mypy>=2.3.1
