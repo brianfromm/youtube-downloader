@@ -210,8 +210,11 @@ def schedule_cleanup() -> None:
     cleanup_old_files(max_age_hours=168)  # Remove files older than 7 days
     cleanup_old_tasks(max_age_hours=24)  # Remove task records older than 1 day
 
-    # Schedule next cleanup in 24 hours
-    Timer(24 * 3600, schedule_cleanup).start()
+    # Schedule next cleanup in 24 hours. Daemon so a pending timer can't block
+    # interpreter exit — non-daemon, it held SIGTERM shutdown for up to 24h.
+    timer = Timer(24 * 3600, schedule_cleanup)
+    timer.daemon = True
+    timer.start()
     app.logger.debug("🔄 Next cleanup scheduled in 24 hours")
 
 

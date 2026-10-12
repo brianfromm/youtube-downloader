@@ -5,11 +5,12 @@ if [ "${USE_DEV_SERVER}" = "true" ]; then
   echo "Starting Flask development server (FLASK_ENV=development)..."
   export FLASK_ENV=development # Set for Flask dev server
   # server.py handles host/port configuration for the dev server.
-  python server.py
+  exec python server.py
 else
   echo "Starting Gunicorn server..."
-  # Execute Gunicorn with command-line arguments, using environment variables for configuration
-  gunicorn \
+  # Execute Gunicorn with command-line arguments, using environment variables for configuration.
+  # exec replaces this shell so Gunicorn is PID 1 in the container and receives SIGTERM directly.
+  exec gunicorn \
     --workers ${GUNICORN_WORKERS:-1} \
     --threads ${GUNICORN_THREADS:-4} \
     --bind 0.0.0.0:${APP_PORT:-8080} \
