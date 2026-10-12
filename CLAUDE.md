@@ -56,6 +56,11 @@ variable with a default, set per host in that host's `.env`. Never hand-edit a
 copy on a server; that is how `FORWARDED_ALLOW_IPS` silently stopped reaching
 production. `docker-compose.dev.yml` adds `build:` and is local-only.
 
+Production updates pull new images automatically, but nothing syncs the compose
+file itself: the server keeps a plain copy, not a git checkout. After merging a
+change to `docker-compose.yml`, copy the new file to the server and run
+`docker compose up -d` there, or the change never reaches production.
+
 ### Linting and Formatting
 
 Ruff handles both linting and formatting.
