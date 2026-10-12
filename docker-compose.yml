@@ -16,6 +16,9 @@ services:
     image: brainicism/bgutil-ytdlp-pot-provider:node
     container_name: bgutil-pot-provider
     restart: unless-stopped
+    # The image runs node as PID 1 with no SIGTERM handler, so without an init
+    # process every stop waits out the 10s grace period and ends in SIGKILL.
+    init: true
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:4416/ping', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
