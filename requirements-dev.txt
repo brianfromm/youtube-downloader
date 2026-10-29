@@ -3,10 +3,10 @@
 
 # Linter and formatter
 # Pinned exactly: CI gates on this, so bumps must be deliberate
-ruff==0.17.2
+ruff==0.17.3
 
 # Traditional comprehensive linter (optional, for detailed analysis)
 pylint>=4.1.3
 
 # Type checking (optional)
-mypy>=2.4.0
+mypy>=2.4.1
