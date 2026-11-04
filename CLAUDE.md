@@ -12,7 +12,7 @@ Web-based YouTube video analyzer and downloader built with Flask, yt-dlp, and FF
 
 ```bash
 # Setup (one-time)
-python3.14 -m venv venv
+python3.15 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 

@@ -128,7 +128,7 @@ HOST_PORT=8080 # Standard host mapping for this service
 2. **Create and activate a virtual environment (recommended):**
 
    ```bash
-   python3.14 -m venv venv
+   python3.15 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
